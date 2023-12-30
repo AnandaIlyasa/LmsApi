@@ -1,0 +1,6 @@
+@LmsApi_HostAddress = http://localhost:5185
+
+GET {{LmsApi_HostAddress}}/users/
+Accept: application/json
+
+###
