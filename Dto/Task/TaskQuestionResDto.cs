@@ -1,4 +1,6 @@
-﻿namespace LmsApi.Dto.Session;
+﻿using LmsApi.Dto.Session;
+
+namespace LmsApi.Dto.Task;
 
 public class TaskQuestionResDto
 {

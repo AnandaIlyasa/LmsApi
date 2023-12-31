@@ -15,7 +15,10 @@ public class UserRepo : IUserRepo
     }
     public User GetUserById(int id)
     {
-        var user = _context.Users.Single(u => u.Id == id);
+        var user = _context.Users
+                .Where(u => u.Id == id)
+                .Include(u => u.Role)
+                .First();
         return user;
     }
 

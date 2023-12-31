@@ -110,5 +110,67 @@ public class Program
         app.MapControllers();
 
         app.Run();
+
+        //LambdaPlayground();
     }
+
+    //static void LambdaPlayground()
+    //{
+    //    var list = new List<Item>()
+    //    {
+    //        new Item(){ Id=1, Name="baju-1"},
+    //        new Item(){ Id=1, Name="baju-2"},
+    //        new Item(){ Id=2, Name="baju-3"},
+    //        new Item(){ Id=2, Name="baju-4"},
+    //    };
+
+    //    var result = list
+    //                .GroupBy(x => x.Id)
+    //                .ToList()
+    //                .Select(g =>
+    //                 {
+    //                     var names = g
+    //                            .Select(x => x.Name)
+    //                            .ToList();
+    //                     return new Container()
+    //                     {
+    //                         Id = g.Key,
+    //                         Names = names,
+    //                     };
+    //                 })
+    //                .ToList();
+
+    //    //var result = new List<Container>();
+    //    //foreach (var item in group)
+    //    //{
+    //    //    result.Add(new Container
+    //    //    {
+    //    //        Id = item.Key,
+    //    //        Names = new List<string>(),
+    //    //    });
+    //    //    foreach (var detail in item)
+    //    //    {
+    //    //        var last = result.Last();
+    //    //        last.Names.Add(detail.Name);
+    //    //    }
+    //    //}
+
+    //    foreach (var item in result)
+    //    {
+    //        Console.Write(item.Id + ": ");
+    //        foreach (var name in item.Names) Console.WriteLine(name);
+    //    }
+    //}
 }
+
+//public class Item
+//{
+//    public int Id { get; set; }
+//    public string Name { get; set; }
+//}
+
+//public class Container
+//{
+//    public int Id { get; set; }
+//    public List<string> Names { get; set; }
+//}

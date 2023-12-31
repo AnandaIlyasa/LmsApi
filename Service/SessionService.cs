@@ -18,6 +18,7 @@ public class SessionService : ISessionService
     readonly ISessionMaterialFileRepo _sessionMaterialFileRepo;
     readonly IForumRepo _forumRepo;
     readonly IForumCommentRepo _forumCommentRepo;
+    readonly IUserRepo _userRepo;
     readonly IPrincipleService _principleService;
 
     readonly string IsoDateTimeFormat = "yyyy-MM-dd HH:mm";
@@ -32,6 +33,7 @@ public class SessionService : ISessionService
         ISessionMaterialFileRepo sessionMaterialFileRepo,
         IForumRepo forumRepo,
         IForumCommentRepo forumCommentRepo,
+        IUserRepo userRepo,
         IPrincipleService principleService
     )
     {
@@ -42,10 +44,11 @@ public class SessionService : ISessionService
         _sessionMaterialFileRepo = sessionMaterialFileRepo;
         _forumRepo = forumRepo;
         _forumCommentRepo = forumCommentRepo;
+        _userRepo = userRepo;
         _principleService = principleService;
     }
 
-    public SessionAttendance AttendSession(int sessionId)
+    public InsertResDto AttendSession(int sessionId)
     {
         var sessionAttendance = new SessionAttendance()
         {
@@ -56,7 +59,13 @@ public class SessionService : ISessionService
             CreatedBy = _principleService.GetLoginId(),
         };
         sessionAttendance = _sessionAttendanceRepo.CreateNewSessionAttendance(sessionAttendance);
-        return sessionAttendance;
+
+        var response = new InsertResDto()
+        {
+            Id = sessionAttendance.Id,
+            Message = "Attend success, please wait for teacher approval",
+        };
+        return response;
     }
 
     public SessionAttendance? GetStudentAttendanceStatus(int sessionId)
@@ -67,23 +76,59 @@ public class SessionService : ISessionService
 
     public SessionDetailResDto GetSessionContentsById(int sessionId)
     {
+        var userId = _principleService.GetLoginId();
+        var user = _userRepo.GetUserById(userId);
+
         var session = _sessionRepo.GetSessionById(sessionId);
-        var attendancesRes = GetSessionAttendancesRes(sessionId);
         var materialsRes = GetSessionMaterialsRes(sessionId);
         var tasksRes = GetSessionTasksRes(sessionId);
         var forumRes = GetSessionForumRes(sessionId);
 
-        var response = new SessionDetailResDto()
+        SessionDetailResDto response;
+        if (user.Role.RoleCode == RoleCode.Student)
         {
-            SessionName = session.SessionName,
-            SessionDescription = session.SessionDescription,
-            StartTime = session.StartTime.ToString(IsoTimeFormat),
-            EndTime = session.EndTime.ToString(IsoTimeFormat),
-            AttendanceList = attendancesRes,
-            Forum = forumRes,
-            MaterialList = materialsRes,
-            TaskList = tasksRes,
-        };
+            var sessionAttendance = _sessionAttendanceRepo.GetSessionAttendanceStatus(sessionId, userId);
+            if (sessionAttendance == null || sessionAttendance.IsApproved == false)
+            {
+                response = new SessionDetailResDto()
+                {
+                    SessionName = session.SessionName,
+                    SessionDescription = session.SessionDescription,
+                    StartTime = session.StartTime.ToString(IsoTimeFormat),
+                    EndTime = session.EndTime.ToString(IsoTimeFormat),
+                    AttendanceApproved = sessionAttendance == null ? null : sessionAttendance.IsApproved,
+                };
+            }
+            else
+            {
+                response = new SessionDetailResDto()
+                {
+                    SessionName = session.SessionName,
+                    SessionDescription = session.SessionDescription,
+                    StartTime = session.StartTime.ToString(IsoTimeFormat),
+                    EndTime = session.EndTime.ToString(IsoTimeFormat),
+                    AttendanceApproved = sessionAttendance.IsApproved,
+                    Forum = forumRes,
+                    MaterialList = materialsRes,
+                    TaskList = tasksRes,
+                };
+            }
+        }
+        else
+        {
+            var attendancesRes = GetSessionAttendancesRes(sessionId);
+            response = new SessionDetailResDto()
+            {
+                SessionName = session.SessionName,
+                SessionDescription = session.SessionDescription,
+                StartTime = session.StartTime.ToString(IsoTimeFormat),
+                EndTime = session.EndTime.ToString(IsoTimeFormat),
+                AttendanceList = attendancesRes,
+                Forum = forumRes,
+                MaterialList = materialsRes,
+                TaskList = tasksRes,
+            };
+        }
 
         return response;
     }

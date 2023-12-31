@@ -25,6 +25,13 @@ public class SessionController : ControllerBase
         return response;
     }
 
+    [HttpPost("{sessionId}")]
+    public InsertResDto AttendSession(int sessionId)
+    {
+        var response = _sessionService.AttendSession(sessionId);
+        return response;
+    }
+
     [HttpPatch("attendances/{sessionAttendanceId}")]
     public UpdateResDto ApproveAttendance(int sessionAttendanceId)
     {

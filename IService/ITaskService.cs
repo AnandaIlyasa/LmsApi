@@ -1,4 +1,5 @@
-﻿using LmsApi.Dto.Session;
+﻿using LmsApi.Dto;
+using LmsApi.Dto.Task;
 using LmsApi.Model;
 
 namespace LmsApi.IService;
@@ -6,8 +7,8 @@ namespace LmsApi.IService;
 public interface ITaskService
 {
     TaskDetailsSubmissionsResDto GetTaskDetailsAndSubmissions(int taskId);
-    void SubmitTask(Submission submission);
+    InsertResDto SubmitTask(int taskId, TaskSubmissionDetailsReqDto req);
     List<Submission> GetStudentSubmissionListBySession(int sessionId);
-    Submission GetStudentSubmissionByTask(int studentId, int taskId);
-    void InsertScoreAndNotes(Submission submission);
+    TaskDetailsStudentSubmissionResDto GetTaskDetailAndStudentSubmissionByTask(int taskId);
+    UpdateResDto InsertScoreAndNotes(int submissionId, TaskSubmissionScoreAndNotesReqDto req);
 }

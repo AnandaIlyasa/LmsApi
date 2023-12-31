@@ -100,11 +100,13 @@ public class UserService : IUserService
 
     public InsertResDto CreateStudent(StudentInsertReqDto req)
     {
+        var systemId = _userRepo.GetUserListByRole(RoleCode.System).First().Id;
         var user = new User()
         {
             FullName = req.FullName,
             Email = req.Email,
-            CreatedBy = _principleService.GetLoginId(),
+            CreatedBy = systemId,
+            CreatedAt = DateTime.Now,
         };
 
         var originalPassword = req.Password;

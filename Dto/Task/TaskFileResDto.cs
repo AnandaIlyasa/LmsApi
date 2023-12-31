@@ -1,6 +1,6 @@
 ﻿using LmsApi.Dto.File;
 
-namespace LmsApi.Dto.Session;
+namespace LmsApi.Dto.Task;
 
 public class TaskFileResDto
 {

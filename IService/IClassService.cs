@@ -9,7 +9,7 @@ public interface IClassService
     List<ClassesResDto> GetAllClassList();
     List<ClassesResDto> GetEnrolledClassList();
     List<ClassesResDto> GetClassListByTeacher();
-    List<Class> GetUnEnrolledClassList();
-    StudentClass EnrollClass(int classId);
+    List<ClassesResDto> GetUnEnrolledClassList();
+    InsertResDto EnrollClass(int classId);
     InsertResDto CreateNewClass(ClassInsertReqDto req);
 }

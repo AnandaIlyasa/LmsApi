@@ -38,6 +38,7 @@ public class UserController : ControllerBase
         return response;
     }
 
+    [AllowAnonymous]
     [HttpPost("students")]
     public InsertResDto InsertStudent([FromBody] StudentInsertReqDto req)
     {

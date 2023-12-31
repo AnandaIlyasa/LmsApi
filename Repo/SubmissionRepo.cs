@@ -21,11 +21,11 @@ public class SubmissionRepo : ISubmissionRepo
         return submission;
     }
 
-    public Submission GetStudentSubmissionByTask(int studentId, int taskId)
+    public Submission? GetStudentSubmissionByTask(int studentId, int taskId)
     {
         var submission = _context.Submissions
                         .Where(s => s.StudentId == studentId && s.TaskId == taskId)
-                        .First();
+                        .FirstOrDefault();
         return submission;
     }
 
@@ -41,6 +41,14 @@ public class SubmissionRepo : ISubmissionRepo
 
         var submissionList = query.ToList();
         return submissionList;
+    }
+
+    public Submission GetSubmissionById(int submissionId)
+    {
+        var submission = _context.Submissions
+                        .Where(s => s.Id == submissionId)
+                        .First();
+        return submission;
     }
 
     public List<Submission> GetSubmissionListByTask(int taskId)

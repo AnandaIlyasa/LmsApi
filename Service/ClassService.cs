@@ -36,7 +36,8 @@ public class ClassService : IClassService
 
     public List<ClassesResDto> GetEnrolledClassList()
     {
-        var enrolledClassList = _classRepo.GetClassListByStudent(_principleService.GetLoginId());
+        var studentId = _principleService.GetLoginId();
+        var enrolledClassList = _classRepo.GetClassListByStudent(studentId);
         var response = enrolledClassList
                     .Select(c =>
                     {
@@ -55,22 +56,45 @@ public class ClassService : IClassService
         return response;
     }
 
-    public List<Class> GetUnEnrolledClassList()
+    public List<ClassesResDto> GetUnEnrolledClassList()
     {
-        var unEnrolledClassList = _classRepo.GetUnEnrolledClassListByStudent(_principleService.GetLoginId());
-        return unEnrolledClassList;
+        var studentId = _principleService.GetLoginId();
+        var unEnrolledClassList = _classRepo.GetUnEnrolledClassListByStudent(studentId);
+        var response = unEnrolledClassList
+                    .Select(c =>
+                    {
+                        var classRes = new ClassesResDto()
+                        {
+                            Id = c.Id,
+                            ClassCode = c.ClassCode,
+                            ClassName = c.ClassTitle,
+                            ClassDescription = c.ClassDescription,
+                            ClassImageId = c.ClassImageId,
+                        };
+                        return classRes;
+                    })
+                    .ToList();
+        return response;
     }
 
-    public StudentClass EnrollClass(int classId)
+    public InsertResDto EnrollClass(int classId)
     {
         var studentId = _principleService.GetLoginId();
         var studentClass = new StudentClass()
         {
             StudentId = studentId,
             ClassId = classId,
+            CreatedAt = DateTime.Now,
+            CreatedBy = studentId,
         };
         studentClass = _studentClassRepo.CreateNewStudentClass(studentClass);
-        return studentClass;
+
+        var response = new InsertResDto()
+        {
+            Id = studentClass.Id,
+            Message = "Enroll successfull",
+        };
+        return response;
     }
 
     public List<ClassesResDto> GetClassListByTeacher()

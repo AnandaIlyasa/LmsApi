@@ -1,6 +1,8 @@
 ﻿using LmsApi.Config;
 using LmsApi.Constant;
+using LmsApi.Dto;
 using LmsApi.Dto.Session;
+using LmsApi.Dto.Task;
 using LmsApi.IRepo;
 using LmsApi.IService;
 using LmsApi.Model;
@@ -156,23 +158,23 @@ public class TaskService : ITaskService
 
             var submissionFileList = _submissionDetailFileRepo.GetStudentSubmissionDetailFileByTask(submission.TaskId, submission.StudentId);
             var submissionFileListRes = submissionFileList
-                            .Select(sf =>
-                            {
-                                var taskFileId = sf.TaskFileId;
-                                var fileIdListRes = submissionFileList
-                                                .Where(sf => sf.TaskFileId == taskFileId)
-                                                .Select(sf => sf.FileId)
-                                                .ToList();
+                                    .GroupBy(sf => sf.TaskFileId)
+                                    .ToList()
+                                    .Select(group =>
+                                    {
+                                        var fileIdListRes = group
+                                                        .Select(sf => sf.FileId)
+                                                        .ToList();
 
-                                var submissionFileRes = new SubmissionDetailFilesResDto()
-                                {
-                                    TaskFileId = sf.TaskFileId,
-                                    FileIdList = fileIdListRes,
-                                };
+                                        var submissionFileRes = new SubmissionDetailFilesResDto()
+                                        {
+                                            TaskFileId = group.Key,
+                                            FileIdList = fileIdListRes,
+                                        };
 
-                                return submissionFileRes;
-                            })
-                            .ToList();
+                                        return submissionFileRes;
+                                    })
+                                    .ToList();
 
             var multipleChoiceScore = (double)correctOptionCount / multipleChoiceQuestionCount * 100.0d;
             var submissionRes = new SubmissionsResDto()
@@ -193,17 +195,82 @@ public class TaskService : ITaskService
         return submissionListRes;
     }
 
-    public Submission GetStudentSubmissionByTask(int studentId, int taskId)
+    public TaskDetailsStudentSubmissionResDto GetTaskDetailAndStudentSubmissionByTask(int taskId)
     {
+        var studentId = _principleService.GetLoginId();
         var submission = _submissionRepo.GetStudentSubmissionByTask(studentId, taskId);
 
-        var submissionQuestionList = _submissionDetailQuestionRepo.GetStudentSubmissionDetailQuestionByTask(taskId, studentId);
-        submission.SubmissionDetailQuestionList = submissionQuestionList;
+        var taskQuestionListRes = GetQuestionsRes(taskId);
+        var multipleChoiceQuestionCount = 0;
+        foreach (var question in taskQuestionListRes)
+            if (question.QuestionType == QuestionType.MultipleChoice) multipleChoiceQuestionCount++;
 
-        var submissionFileList = _submissionDetailFileRepo.GetStudentSubmissionDetailFileByTask(taskId, studentId);
-        submission.SubmissionDetailFileList = submissionFileList;
+        var taskFileListRes = GetTaskFilesRes(taskId);
 
-        return submission;
+        List<SubmissionDetailFilesResDto>? submissionFileListRes = null;
+        List<SubmissionDetailQuestionsResDto>? submissionQuestionListRes = null;
+        var correctOptionCount = 0;
+        if (submission != null)
+        {
+            var submissionQuestionList = _submissionDetailQuestionRepo.GetStudentSubmissionDetailQuestionByTask(taskId, studentId);
+            submissionQuestionList.ForEach(sq =>
+            {
+                if (sq.ChoiceOption != null && sq.ChoiceOption.IsCorrect) correctOptionCount++;
+            });
+            submissionQuestionListRes = submissionQuestionList
+                                            .Select(sq =>
+                                            {
+                                                if (sq.ChoiceOption != null && sq.ChoiceOption.IsCorrect) correctOptionCount++;
+
+                                                var submissionQuestionRes = new SubmissionDetailQuestionsResDto()
+                                                {
+                                                    QuestionId = sq.QuestionId,
+                                                    ChoiceOptionId = sq.ChoiceOptionId,
+                                                    EssayAnswerContent = sq.EssayAnswerContent,
+                                                };
+
+                                                return submissionQuestionRes;
+                                            })
+                                            .ToList();
+
+
+            var submissionFileList = _submissionDetailFileRepo.GetStudentSubmissionDetailFileByTask(taskId, studentId);
+            submissionFileListRes = submissionFileList
+                                    .GroupBy(sf => sf.TaskFileId)
+                                    .ToList()
+                                    .Select(group =>
+                                    {
+                                        var fileIdListRes = group
+                                                        .Select(sf => sf.FileId)
+                                                        .ToList();
+
+                                        var submissionFileRes = new SubmissionDetailFilesResDto()
+                                        {
+                                            TaskFileId = group.Key,
+                                            FileIdList = fileIdListRes,
+                                        };
+
+                                        return submissionFileRes;
+                                    })
+                                    .ToList();
+        }
+
+        var multipleChoiceScore = (double)correctOptionCount / multipleChoiceQuestionCount * 100.0d;
+
+        var response = new TaskDetailsStudentSubmissionResDto()
+        {
+            TaskFileList = taskFileListRes,
+            TaskQuestionList = taskQuestionListRes,
+            Submission = submission == null ? null : new SubmissionsResDto()
+            {
+                FinalScore = submission.Grade,
+                TeacherNotes = submission.TeacherNotes,
+                MultipleChoiceScore = multipleChoiceScore,
+                SubmissionDetailFileList = submissionFileListRes,
+                SubmissionDetailQuestionList = submissionQuestionListRes,
+            },
+        };
+        return response;
     }
 
     public List<Submission> GetStudentSubmissionListBySession(int sessionId)
@@ -212,46 +279,113 @@ public class TaskService : ITaskService
         return submissionList;
     }
 
-    public void InsertScoreAndNotes(Submission submission)
+    public UpdateResDto InsertScoreAndNotes(int submissionId, TaskSubmissionScoreAndNotesReqDto req)
     {
+        var submission = _submissionRepo.GetSubmissionById(submissionId);
+
+        var questionList = _questionRepo.GetQuestionListByTask(submission.TaskId);
+        var multipleChoiceQuestionCount = 0;
+        foreach (var question in questionList)
+            if (question.QuestionType == QuestionType.MultipleChoice) multipleChoiceQuestionCount++;
+
+        var submissionQuestionList = _submissionDetailQuestionRepo.GetStudentSubmissionDetailQuestionByTask(submission.TaskId, submission.StudentId);
+        var correctOptionCount = 0;
+        submissionQuestionList.ForEach(sq =>
+        {
+            if (sq.ChoiceOption != null && sq.ChoiceOption.IsCorrect) correctOptionCount++;
+        });
+
+        var multipleChoiceScore = (double)correctOptionCount / multipleChoiceQuestionCount * 100.0d;
+
+        submission.Grade = (multipleChoiceScore + req.Grade) / 2.0d;
+        submission.TeacherNotes = req.TeacherNotes;
         submission.UpdatedAt = DateTime.Now;
         submission.UpdatedBy = _principleService.GetLoginId();
-        _submissionRepo.UpdateSubmissionGradeAndNotes(submission);
+        var affectedRows = _submissionRepo.UpdateSubmissionGradeAndNotes(submission);
+
+        var response = new UpdateResDto()
+        {
+            Version = affectedRows.ToString(),
+            Message = "Score and notes successfully inserted",
+        };
+        return response;
     }
 
-    public void SubmitTask(Submission submission)
+    public InsertResDto SubmitTask(int taskId, TaskSubmissionDetailsReqDto req)
     {
+        InsertResDto response;
         using (var context = new DBContextConfig())
         {
-            var trx = context.Database.BeginTransaction();
-
-            submission.StudentId = _principleService.GetLoginId();
-            submission.CreatedBy = _principleService.GetLoginId();
-            submission.CreatedAt = DateTime.Now;
-            var insertedSubmission = _submissionRepo.CreateNewSubmission(submission);
-
-            foreach (var questionSubmission in submission.SubmissionDetailQuestionList)
+            using (var trx = context.Database.BeginTransaction())
             {
-                questionSubmission.SubmissionId = insertedSubmission.Id;
-                questionSubmission.CreatedBy = _principleService.GetLoginId();
-                questionSubmission.CreatedAt = DateTime.Now;
-                _submissionDetailQuestionRepo.CreateNewSubmissionDetailQuestion(questionSubmission);
+                try
+                {
+                    var studentId = _principleService.GetLoginId();
+
+                    var submission = new Submission()
+                    {
+                        StudentId = _principleService.GetLoginId(),
+                        TaskId = taskId,
+                        CreatedAt = DateTime.Now,
+                        CreatedBy = _principleService.GetLoginId(),
+                    };
+                    submission = _submissionRepo.CreateNewSubmission(submission);
+
+                    foreach (var submissionFileReq in req.SubmissionDetailFiles)
+                    {
+                        foreach (var fileReq in submissionFileReq.FileList)
+                        {
+                            var file = new LMSFile()
+                            {
+                                FileContent = fileReq.FileContent,
+                                FileExtension = fileReq.FileExtension,
+                                CreatedAt = DateTime.Now,
+                                CreatedBy = studentId,
+                            };
+                            file = _fileRepo.CreateNewFile(file);
+
+                            var fileSubmission = new SubmissionDetailFile()
+                            {
+                                SubmissionId = submission.Id,
+                                TaskFileId = submissionFileReq.TaskFileId,
+                                FileId = file.Id,
+                                CreatedAt = DateTime.Now,
+                                CreatedBy = studentId,
+                            };
+                            _submissionDetailFileRepo.CreateNewSubmissionDetailFile(fileSubmission);
+                        }
+                    }
+
+                    foreach (var submissionQuestionReq in req.SubmissionDetailQuestions)
+                    {
+                        var questionSubmission = new SubmissionDetailQuestion()
+                        {
+                            SubmissionId = submission.Id,
+                            QuestionId = submissionQuestionReq.QuestionId,
+                            ChoiceOptionId = submissionQuestionReq.ChoiceOptionId,
+                            EssayAnswerContent = submissionQuestionReq.EssayAnswerContent,
+                            CreatedAt = DateTime.Now,
+                            CreatedBy = studentId,
+                        };
+                        _submissionDetailQuestionRepo.CreateNewSubmissionDetailQuestion(questionSubmission);
+                    }
+
+                    response = new InsertResDto()
+                    {
+                        Id = submission.Id,
+                        Message = "Task successfully submitted",
+                    };
+
+                    trx.Commit();
+                }
+                catch
+                {
+                    trx.Rollback();
+                    throw;
+                }
             }
-
-            foreach (var fileSubmission in submission.SubmissionDetailFileList)
-            {
-                fileSubmission.File.CreatedBy = _principleService.GetLoginId();
-                fileSubmission.File.CreatedAt = DateTime.Now;
-                var insertedFile = _fileRepo.CreateNewFile(fileSubmission.File);
-
-                fileSubmission.FileId = insertedFile.Id;
-                fileSubmission.SubmissionId = insertedSubmission.Id;
-                fileSubmission.CreatedBy = _principleService.GetLoginId();
-                fileSubmission.CreatedAt = DateTime.Now;
-                _submissionDetailFileRepo.CreateNewSubmissionDetailFile(fileSubmission);
-            }
-
-            trx.Commit();
         }
+
+        return response;
     }
 }

@@ -36,4 +36,25 @@ public class ClassController : ControllerBase
         var response = _classService.GetClassListByTeacher();
         return response;
     }
+
+    [HttpGet("enrolled")]
+    public List<ClassesResDto> GetEnrolledClassListByStudent()
+    {
+        var response = _classService.GetEnrolledClassList();
+        return response;
+    }
+
+    [HttpGet("unenrolled")]
+    public List<ClassesResDto> GetUnEnrolledClassListByStudent()
+    {
+        var response = _classService.GetUnEnrolledClassList();
+        return response;
+    }
+
+    [HttpPost("{classId}")]
+    public InsertResDto EnrollClass(int classId)
+    {
+        var response = _classService.EnrollClass(classId);
+        return response;
+    }
 }
