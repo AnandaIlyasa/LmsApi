@@ -1,4 +1,3 @@
-using LmsApi.Utils;
 using LmsApi.Config;
 using LmsApi.Handler;
 using LmsApi.IRepo;
@@ -24,6 +23,7 @@ public class Program
         // Add services to the container.
 
         builder.Services.Configure<ApiBehaviorOptions>(options => options.SuppressModelStateInvalidFilter = true);
+
         builder.Services.AddControllers(options =>
         {
             options.Filters.Add<ValidationHandler>();
@@ -56,10 +56,10 @@ public class Program
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IClassService, ClassService>();
         builder.Services.AddScoped<ISessionService, SessionService>();
-        builder.Services.AddScoped<ITaskSubmissionService, TaskSubmissionService>();
+        builder.Services.AddScoped<ITaskService, TaskService>();
         builder.Services.AddScoped<IForumService, ForumService>();
         builder.Services.AddScoped<IEmailService, EmailService>();
-        builder.Services.AddScoped<IPrincipleService, PrincpleService>();
+        builder.Services.AddScoped<IFileService, FileService>();
 
         var key = Encoding.ASCII.GetBytes(JwtUtil.KeyStr());
         builder.Services
@@ -90,6 +90,7 @@ public class Program
             });
 
         builder.Services.AddHttpContextAccessor();
+        builder.Services.AddScoped<IPrincipleService, PrincpleService>();
 
         builder.Services.AddSwaggerGen();
 
@@ -100,7 +101,6 @@ public class Program
             app.UseSwagger();
             app.UseSwaggerUI();
         }
-
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
         // Configure the HTTP request pipeline.

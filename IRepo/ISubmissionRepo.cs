@@ -9,5 +9,5 @@ public interface ISubmissionRepo
     Submission CreateNewSubmission(Submission submission);
     int UpdateSubmissionGradeAndNotes(Submission submission);
     List<Submission> GetStudentSubmissionListBySession(int sessionId, int studentId);
-    List<Submission> GetSubmissionListBySession(int sessionId);
+    List<Submission> GetSubmissionListByTask(int taskId);
 }

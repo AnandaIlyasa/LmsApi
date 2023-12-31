@@ -7,7 +7,7 @@ namespace LmsApi.Model;
 public class TaskFile : BaseModel
 {
     [Column("file_name"), MaxLength(30)]
-    public string? FileName { get; set; }
+    public string FileName { get; set; }
 
     [Column("file_id")]
     public int FileId { get; set; }

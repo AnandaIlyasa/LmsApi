@@ -12,7 +12,7 @@ public class TaskMultipleChoiceOption : BaseModel
     public string OptionChar { get; set; }
 
     [Column("option_text"), MaxLength(255)]
-    public string? OptionText { get; set; }
+    public string OptionText { get; set; }
 
     [Column("is_correct")]
     public bool IsCorrect { get; set; }

@@ -5,8 +5,9 @@ using LmsApi.Model;
 
 public interface IUserRepo
 {
-    User? GetUserByEmailAndPassword(string email, string password);
+    User GetUserById(int id);
+    User? GetUserByEmail(string email);
     User CreateNewUser(User user);
-    User GetUserByRole(string roleCode);
+    int UpdateUser(User user);
     List<User> GetUserListByRole(string roleCode);
 }

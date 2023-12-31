@@ -19,4 +19,12 @@ public class LMSFileRepo : ILMSFileRepo
         _context.SaveChanges();
         return file;
     }
+
+    public LMSFile GetFileById(int id)
+    {
+        var file = _context.LMSFiles
+                    .Where(f => f.Id == id)
+                    .First();
+        return file;
+    }
 }

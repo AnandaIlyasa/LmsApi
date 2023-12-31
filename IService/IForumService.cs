@@ -1,9 +1,11 @@
-﻿using LmsApi.Model;
+﻿using LmsApi.Dto;
+using LmsApi.Dto.Session;
+using LmsApi.Model;
 
 namespace LmsApi.IService;
 
 public interface IForumService
 {
-    List<ForumComment> GetForumCommentList(int forumId);
-    ForumComment PostCommentToForum(ForumComment forumComment);
+    List<ForumCommentsResDto> GetForumCommentList(int forumId);
+    InsertResDto PostCommentToForum(int forumId, ForumCommentInsertReqDto req);
 }

@@ -1,9 +1,11 @@
 ﻿using LmsApi.Config;
 using LmsApi.Constant;
-
+using LmsApi.Dto;
+using LmsApi.Dto.Session;
 using LmsApi.IRepo;
 using LmsApi.IService;
 using LmsApi.Model;
+using System.Diagnostics;
 
 namespace LmsApi.Service;
 
@@ -14,12 +16,12 @@ public class SessionService : ISessionService
     readonly ISessionMaterialRepo _sessionMaterialRepo;
     readonly ISessionTaskRepo _sessionTaskRepo;
     readonly ISessionMaterialFileRepo _sessionMaterialFileRepo;
-    readonly ITaskQuestionRepo _questionRepo;
-    readonly ITaskMultipleChoiceOptionRepo _multipleChoiceOptionRepo;
     readonly IForumRepo _forumRepo;
     readonly IForumCommentRepo _forumCommentRepo;
-    readonly ITaskFileRepo _taskFileRepo;
     readonly IPrincipleService _principleService;
+
+    readonly string IsoDateTimeFormat = "yyyy-MM-dd HH:mm";
+    readonly string IsoTimeFormat = "HH:mm";
 
     public SessionService
     (
@@ -28,11 +30,8 @@ public class SessionService : ISessionService
         ISessionMaterialRepo sessionMaterialRepo,
         ISessionTaskRepo sessionTaskRepo,
         ISessionMaterialFileRepo sessionMaterialFileRepo,
-        ITaskQuestionRepo taskQuestionRepo,
-        ITaskMultipleChoiceOptionRepo taskMultipleChoiceOptionRepo,
         IForumRepo forumRepo,
         IForumCommentRepo forumCommentRepo,
-        ITaskFileRepo taskFileRepo,
         IPrincipleService principleService
     )
     {
@@ -41,11 +40,8 @@ public class SessionService : ISessionService
         _sessionMaterialRepo = sessionMaterialRepo;
         _sessionTaskRepo = sessionTaskRepo;
         _sessionMaterialFileRepo = sessionMaterialFileRepo;
-        _questionRepo = taskQuestionRepo;
-        _multipleChoiceOptionRepo = taskMultipleChoiceOptionRepo;
         _forumRepo = forumRepo;
         _forumCommentRepo = forumCommentRepo;
-        _taskFileRepo = taskFileRepo;
         _principleService = principleService;
     }
 
@@ -69,62 +65,142 @@ public class SessionService : ISessionService
         return sessionAttendance;
     }
 
-    public List<SessionAttendance> GetSessionAttendanceList(int sessionId)
-    {
-        var attendanceList = _sessionAttendanceRepo.GetSessionAttendanceList(sessionId);
-        return attendanceList;
-    }
-
-    public Session GetSessionAndContentsById(int sessionId)
+    public SessionDetailResDto GetSessionContentsById(int sessionId)
     {
         var session = _sessionRepo.GetSessionById(sessionId);
+        var attendancesRes = GetSessionAttendancesRes(sessionId);
+        var materialsRes = GetSessionMaterialsRes(sessionId);
+        var tasksRes = GetSessionTasksRes(sessionId);
+        var forumRes = GetSessionForumRes(sessionId);
+
+        var response = new SessionDetailResDto()
+        {
+            SessionName = session.SessionName,
+            SessionDescription = session.SessionDescription,
+            StartTime = session.StartTime.ToString(IsoTimeFormat),
+            EndTime = session.EndTime.ToString(IsoTimeFormat),
+            AttendanceList = attendancesRes,
+            Forum = forumRes,
+            MaterialList = materialsRes,
+            TaskList = tasksRes,
+        };
+
+        return response;
+    }
+
+    private List<SessionAttendancesResDto> GetSessionAttendancesRes(int sessionId)
+    {
+        var attendanceList = _sessionAttendanceRepo.GetSessionAttendanceList(sessionId);
+        var attendanceListRes = attendanceList
+                                .Select(a =>
+                                    new SessionAttendancesResDto()
+                                    {
+                                        Id = a.Id,
+                                        StudentFullName = a.Student.FullName,
+                                        IsApproved = a.IsApproved,
+                                        CreatedAt = a.CreatedAt.ToString(IsoDateTimeFormat),
+                                    }
+                                )
+                                .ToList();
+
+        return attendanceListRes;
+    }
+
+    private List<SessionMaterialsResDto> GetSessionMaterialsRes(int sessionId)
+    {
         var materialList = _sessionMaterialRepo.GetMaterialListBySession(sessionId);
-        session.MaterialList = materialList;
         foreach (var material in materialList)
         {
             var materialFileList = _sessionMaterialFileRepo.GetSessionMaterialFileListByMaterial(material.Id);
             material.MaterialFileList = materialFileList;
         }
 
-        var taskList = _sessionTaskRepo.GetTaskListBySession(sessionId);
-        session.TaskList = taskList;
-        foreach (var task in taskList)
-        {
-            var questionList = _questionRepo.GetQuestionListByTask(task.Id);
-            task.TaskQuestionList = questionList;
-            foreach (var question in questionList)
-            {
-                if (question.QuestionType == QuestionType.MultipleChoice)
-                {
-                    var optionList = _multipleChoiceOptionRepo.GetMultipleChoiceOptionListByQuestion(question.Id);
-                    optionList = optionList
-                                .OrderBy(o => o.OptionChar)
-                                .ToList();
-                    question.OptionList = optionList;
-                }
-            }
-            task.TaskQuestionList = task.TaskQuestionList
-                                    .OrderByDescending(q => q.QuestionType)
-                                    .ToList();
+        var materialListRes = materialList
+                            .Select(m =>
+                            {
+                                var materialFileListRes = m.MaterialFileList?
+                                                        .Select(mf =>
+                                                            new MaterialFileResDto()
+                                                            {
+                                                                FileName = mf.FileName,
+                                                                FileId = mf.FileId,
+                                                            }
+                                                        )
+                                                        .ToList();
+                                var materialRes = new SessionMaterialsResDto()
+                                {
+                                    MaterialName = m.MaterialName,
+                                    MaterialDescription = m.MaterialDescription,
+                                    MaterialFileList = materialFileListRes,
+                                };
+                                return materialRes;
+                            })
+                            .ToList();
 
-            var taskFileList = _taskFileRepo.GetTaskFileList(task.Id);
-            task.TaskFileList = taskFileList;
-        }
-
-        var forum = _forumRepo.GetForumBySession(sessionId);
-        session.Forum = forum;
-
-        var commentList = _forumCommentRepo.GetForumCommentListByForum(sessionId);
-        session.Forum.CommentList = commentList;
-
-        return session;
+        return materialListRes;
     }
 
-    public void UpdateAttendanceApprovalStatus(SessionAttendance sessionAttendance)
+    private List<SessionTasksResDto> GetSessionTasksRes(int sessionId)
     {
+        var taskList = _sessionTaskRepo.GetTaskListBySession(sessionId);
+        var taskListRes = taskList
+                        .Select(t =>
+                            new SessionTasksResDto()
+                            {
+                                Id = t.Id,
+                                TaskName = t.TaskName,
+                                TaskDescription = t.TaskDescription,
+                                Duration = t.Duration,
+                            }
+                        )
+                        .ToList();
+
+        return taskListRes;
+    }
+
+    private SessionForumResDto GetSessionForumRes(int sessionId)
+    {
+        var forum = _forumRepo.GetForumBySession(sessionId);
+        var commentList = _forumCommentRepo.GetForumCommentListByForum(sessionId);
+        var commentListRes = commentList
+                            .Select(fc =>
+                                new ForumCommentsResDto()
+                                {
+                                    UserId = fc.UserId,
+                                    FullName = fc.User.FullName,
+                                    CommentContent = fc.CommentContent,
+                                    CreatedAt = fc.CreatedAt.ToString(IsoDateTimeFormat),
+                                }
+                            )
+                            .ToList();
+
+        var forumRes = new SessionForumResDto()
+        {
+            Id = forum.Id,
+            ForumName = forum.ForumName,
+            ForumDescription = forum.ForumDescription,
+            CommentList = commentListRes,
+        };
+
+        return forumRes;
+    }
+
+    public UpdateResDto ApproveAttendance(int sessionAttendanceId)
+    {
+        var sessionAttendance = new SessionAttendance()
+        {
+            Id = sessionAttendanceId,
+        };
         sessionAttendance.UpdatedBy = _principleService.GetLoginId();
         sessionAttendance.UpdatedAt = DateTime.Now;
-        sessionAttendance.IsApproved = !sessionAttendance.IsApproved;
-        _sessionAttendanceRepo.UpdateSessionAttendance(sessionAttendance);
+        sessionAttendance.IsApproved = true;
+        var rowsAffected = _sessionAttendanceRepo.UpdateSessionAttendance(sessionAttendance);
+
+        var response = new UpdateResDto()
+        {
+            Version = rowsAffected.ToString(),
+            Message = "Attendance approval status successfully updated",
+        };
+        return response;
     }
 }

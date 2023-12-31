@@ -13,29 +13,25 @@ public class UserRepo : IUserRepo
     {
         _context = context;
     }
-
-    public User CreateNewUser(User user)
+    public User GetUserById(int id)
     {
-        _context.Users.Add(user);
-        _context.SaveChanges();
+        var user = _context.Users.Single(u => u.Id == id);
         return user;
     }
 
-    public User? GetUserByEmailAndPassword(string email, string password)
+    public User? GetUserByEmail(string email)
     {
         var user = _context.Users
-                .Where(u => u.Email == email && EF.Functions.Like(u.Pass, password) && u.IsActive == true)
+                .Where(u => u.Email == email && u.IsActive == true)
                 .Include(u => u.Role)
                 .FirstOrDefault();
         return user;
     }
 
-    public User GetUserByRole(string roleCode)
+    public User CreateNewUser(User user)
     {
-        var user = _context.Users
-                    .Include(u => u.Role)
-                    .Where(u => u.Role.RoleCode == roleCode)
-                    .First();
+        _context.Users.Add(user);
+        _context.SaveChanges();
         return user;
     }
 
@@ -46,5 +42,14 @@ public class UserRepo : IUserRepo
                     .Where(u => u.Role.RoleCode == roleCode)
                     .ToList();
         return userList;
+    }
+
+    public int UpdateUser(User user)
+    {
+        var foundUser = _context.Users
+                        .Where(u => u.Id == user.Id)
+                        .First();
+        foundUser.Pass = user.Pass;
+        return _context.SaveChanges();
     }
 }

@@ -1,12 +1,14 @@
-﻿using LmsApi.Config;
+﻿using LmsApi.Dto;
+using LmsApi.Dto.User;
 using LmsApi.Model;
 
 namespace LmsApi.IService;
 
 public interface IUserService
 {
-    User? Login(string email, string password);
-    User CreateNewStudent(User user);
-    User CreateNewTeacher(User user);
-    List<User> GetTeacherList();
+    UserLoginResDto? Login(UserLoginReqDto req);
+    InsertResDto CreateTeacher(TeacherInsertReqDto req);
+    InsertResDto CreateStudent(StudentInsertReqDto req);
+    UpdateResDto ChangePassword(UserChangePasswordReqDto req);
+    List<UsersResDto> GetTeacherList();
 }

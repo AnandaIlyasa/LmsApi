@@ -43,13 +43,11 @@ public class SubmissionRepo : ISubmissionRepo
         return submissionList;
     }
 
-    public List<Submission> GetSubmissionListBySession(int sessionId)
+    public List<Submission> GetSubmissionListByTask(int taskId)
     {
         var query =
             from s in _context.Submissions
-            join t in _context.LMSTasks on s.TaskId equals t.Id into stGroup
-            from st in stGroup.DefaultIfEmpty()
-            join ses in _context.Sessions on st.SessionId equals ses.Id into sesGroup
+            where s.TaskId == taskId
             orderby s.CreatedAt
             select s;
 

@@ -1,4 +1,6 @@
-﻿using LmsApi.IRepo;
+﻿using LmsApi.Dto;
+using LmsApi.Dto.Session;
+using LmsApi.IRepo;
 using LmsApi.IService;
 using LmsApi.Model;
 
@@ -9,27 +11,49 @@ public class ForumService : IForumService
     readonly IForumCommentRepo _forumCommentRepo;
     readonly IPrincipleService _principleService;
 
+    readonly string IsoDateTimeFormat = "yyyy-MM-dd HH:mm";
+
     public ForumService(IForumCommentRepo forumCommentRepo, IPrincipleService principleService)
     {
         _forumCommentRepo = forumCommentRepo;
         _principleService = principleService;
     }
 
-    public List<ForumComment> GetForumCommentList(int forumId)
+    public List<ForumCommentsResDto> GetForumCommentList(int forumId)
     {
         var commentList = _forumCommentRepo.GetForumCommentListByForum(forumId);
-        commentList = commentList
+        var response = commentList
+                    .Select(c =>
+                        new ForumCommentsResDto()
+                        {
+                            UserId = c.UserId,
+                            CommentContent = c.CommentContent,
+                            FullName = c.User.FullName,
+                            CreatedAt = c.CreatedAt.ToString(IsoDateTimeFormat),
+                        }
+                    )
                     .OrderBy(c => c.CreatedAt)
                     .ToList();
-        return commentList;
+        return response;
     }
 
-    public ForumComment PostCommentToForum(ForumComment forumComment)
+    public InsertResDto PostCommentToForum(int forumId, ForumCommentInsertReqDto req)
     {
-        forumComment.UserId = _principleService.GetLoginId();
-        forumComment.CreatedBy = _principleService.GetLoginId();
-        forumComment.CreatedAt = DateTime.Now;
-        var newComment = _forumCommentRepo.CreateNewComment(forumComment);
-        return newComment;
+        var forumComment = new ForumComment()
+        {
+            ForumId = forumId,
+            CommentContent = req.CommentContent,
+            UserId = _principleService.GetLoginId(),
+            CreatedBy = _principleService.GetLoginId(),
+            CreatedAt = DateTime.Now,
+        };
+        var insertedComment = _forumCommentRepo.CreateNewComment(forumComment);
+
+        var response = new InsertResDto()
+        {
+            Id = insertedComment.Id,
+            Message = "Comment successfully created",
+        };
+        return response;
     }
 }

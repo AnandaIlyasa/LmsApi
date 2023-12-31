@@ -18,7 +18,7 @@ public class JwtUtil
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(KeyStr()));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var expired = DateTime.Now.AddSeconds(5);
+        var expired = DateTime.Now.AddMonths(2);
 
         var token = new JwtSecurityToken(
             claims: claims,

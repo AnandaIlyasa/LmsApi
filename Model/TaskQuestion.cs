@@ -10,7 +10,7 @@ public class TaskQuestion : BaseModel
     public string QuestionType { get; set; }
 
     [Column("question_content")]
-    public string? QuestionContent { get; set; }
+    public string QuestionContent { get; set; }
 
     [NotMapped]
     public List<TaskMultipleChoiceOption> OptionList { get; set; } // not mapped

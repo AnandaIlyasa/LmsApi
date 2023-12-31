@@ -1,13 +1,15 @@
 ﻿namespace LmsApi.IService;
 
+using LmsApi.Dto;
+using LmsApi.Dto.Class;
 using LmsApi.Model;
 
 public interface IClassService
 {
-    List<Class> GetAllClassList();
-    List<Class> GetEnrolledClassList();
-    List<Class> GetClassListByTeacher();
+    List<ClassesResDto> GetAllClassList();
+    List<ClassesResDto> GetEnrolledClassList();
+    List<ClassesResDto> GetClassListByTeacher();
     List<Class> GetUnEnrolledClassList();
     StudentClass EnrollClass(int classId);
-    Class CreateNewClass(Class newClass);
+    InsertResDto CreateNewClass(ClassInsertReqDto req);
 }

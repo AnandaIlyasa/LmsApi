@@ -1,61 +1,54 @@
 ﻿namespace LmsApi.Controllers;
 
+using LmsApi.Dto;
+using LmsApi.Dto.User;
 using LmsApi.IService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
-[Route("/users")]
+[Route("users")]
 public class UserController : ControllerBase
 {
     readonly IUserService _userService;
-    readonly IEmailService _emailService;
 
-    public UserController(IUserService userService, IEmailService emailService)
+    public UserController(IUserService userService)
     {
         _userService = userService;
-        _emailService = emailService;
     }
 
-    [AllowAnonymous]
-    [HttpGet]
-    public void SendEmail()
+    [HttpPost("login"), AllowAnonymous]
+    public UserLoginResDto? Login(UserLoginReqDto req)
     {
-        var receiver = "maulananinja@gmail.com";
-        _emailService.SendEmail(receiver, "Ramalan cuaca hari ini", "hujan");
+        var response = _userService.Login(req);
+        return response;
     }
-    //[HttpGet("{roleCode}")]
-    //public List<UsersResDto> GetUserListByRole(string roleCode)
-    //{
-    //    var response = _userService.GetUserListByRole(roleCode);
-    //    return response;
-    //}
 
-    //[HttpGet("roles")]
-    //public List<RolesResDto> GetReviewerHRRoleList()
-    //{
-    //    var response = _userService.GetReviewerAndHRRole();
-    //    return response;
-    //}
+    [HttpPost("teachers")]
+    public InsertResDto InsertTeacher([FromBody] TeacherInsertReqDto req)
+    {
+        var response = _userService.CreateTeacher(req);
+        return response;
+    }
 
-    //[HttpPost]
-    //public InsertResDto Insert([FromBody] UserInsertReqDto req)
-    //{
-    //    var response = _userService.CreateUser(req);
-    //    return response;
-    //}
+    [HttpGet("teachers")]
+    public List<UsersResDto> GetTeacherList()
+    {
+        var response = _userService.GetTeacherList();
+        return response;
+    }
 
-    //[HttpPatch("password")]
-    //public UpdateResDto ChangePassword([FromBody] UserChangePasswordReqDto req)
-    //{
-    //    var response = _userService.ChangePassword(req);
-    //    return response;
-    //}
+    [HttpPost("students")]
+    public InsertResDto InsertStudent([FromBody] StudentInsertReqDto req)
+    {
+        var response = _userService.CreateStudent(req);
+        return response;
+    }
 
-    //[HttpPost("login"), AllowAnonymous]
-    //public UserLoginResDto? Login(UserLoginReqDto req)
-    //{
-    //    var response = _userService.Login(req);
-    //    return response;
-    //}
+    [HttpPatch("password")]
+    public UpdateResDto ChangePassword([FromBody] UserChangePasswordReqDto req)
+    {
+        var response = _userService.ChangePassword(req);
+        return response;
+    }
 }
