@@ -12,4 +12,5 @@ public interface IClassService
     List<ClassesResDto> GetUnEnrolledClassList();
     InsertResDto EnrollClass(int classId);
     InsertResDto CreateNewClass(ClassInsertReqDto req);
+    InsertResDto CreateClassLearning(int classId, LearningInsertReqDto req);
 }

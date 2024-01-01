@@ -25,6 +25,13 @@ public class SessionController : ControllerBase
         return response;
     }
 
+    [HttpPost]
+    public InsertResDto CreateSession(SessionInsertReqDto req)
+    {
+        var response = _sessionService.CreateSession(req);
+        return response;
+    }
+
     [HttpPost("{sessionId}")]
     public InsertResDto AttendSession(int sessionId)
     {
@@ -40,7 +47,7 @@ public class SessionController : ControllerBase
     }
 
     [HttpPost("forums/{forumId}/comments")]
-    public InsertResDto InsertForumComment(int forumId, [FromBody] ForumCommentInsertReqDto req)
+    public InsertResDto CreateForumComment(int forumId, [FromBody] ForumCommentInsertReqDto req)
     {
         var response = _forumService.PostCommentToForum(forumId, req);
         return response;

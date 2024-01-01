@@ -29,20 +29,6 @@ public class SubmissionRepo : ISubmissionRepo
         return submission;
     }
 
-    public List<Submission> GetStudentSubmissionListBySession(int sessionId, int studentId)
-    {
-        var query =
-            from s in _context.Submissions
-            join t in _context.LMSTasks on s.TaskId equals t.Id into stGroup
-            from st in stGroup.DefaultIfEmpty()
-            join ses in _context.Sessions on st.SessionId equals ses.Id into sesGroup
-            where s.StudentId == studentId
-            select s;
-
-        var submissionList = query.ToList();
-        return submissionList;
-    }
-
     public Submission GetSubmissionById(int submissionId)
     {
         var submission = _context.Submissions

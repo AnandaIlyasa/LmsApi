@@ -273,12 +273,6 @@ public class TaskService : ITaskService
         return response;
     }
 
-    public List<Submission> GetStudentSubmissionListBySession(int sessionId)
-    {
-        var submissionList = _submissionRepo.GetStudentSubmissionListBySession(sessionId, _principleService.GetLoginId());
-        return submissionList;
-    }
-
     public UpdateResDto InsertScoreAndNotes(int submissionId, TaskSubmissionScoreAndNotesReqDto req)
     {
         var submission = _submissionRepo.GetSubmissionById(submissionId);

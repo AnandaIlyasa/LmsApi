@@ -25,7 +25,7 @@ public class UserController : ControllerBase
     }
 
     [HttpPost("teachers")]
-    public InsertResDto InsertTeacher([FromBody] TeacherInsertReqDto req)
+    public InsertResDto CreateTeacher([FromBody] TeacherInsertReqDto req)
     {
         var response = _userService.CreateTeacher(req);
         return response;
@@ -40,7 +40,7 @@ public class UserController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("students")]
-    public InsertResDto InsertStudent([FromBody] StudentInsertReqDto req)
+    public InsertResDto CreateStudent([FromBody] StudentInsertReqDto req)
     {
         var response = _userService.CreateStudent(req);
         return response;

@@ -6,6 +6,7 @@ using LmsApi.IRepo;
 using LmsApi.IService;
 using LmsApi.Model;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace LmsApi.Service;
 
@@ -246,6 +247,70 @@ public class SessionService : ISessionService
             Version = rowsAffected.ToString(),
             Message = "Attendance approval status successfully updated",
         };
+        return response;
+    }
+
+    public InsertResDto CreateSession(SessionInsertReqDto req)
+    {
+        InsertResDto response;
+        using (var context = new DBContextConfig())
+        {
+            using (var trx = context.Database.BeginTransaction())
+            {
+                try
+                {
+                    TimeOnly startTime;
+                    var success = TimeOnly.TryParseExact(req.StartTime, IsoTimeFormat, CultureInfo.CurrentCulture, DateTimeStyles.None, out startTime);
+                    if (success == false)
+                    {
+                        throw new Exception("Error parsing startTime, please use ISO format");
+                    }
+
+                    TimeOnly endTime;
+                    success = TimeOnly.TryParseExact(req.StartTime, IsoTimeFormat, CultureInfo.CurrentCulture, DateTimeStyles.None, out endTime);
+                    if (success == false)
+                    {
+                        throw new Exception("Error parsing endTime, please use ISO format");
+                    }
+
+                    var session = new Session()
+                    {
+                        LearningId = req.LearningId,
+                        SessionName = req.SessionName,
+                        SessionDescription = req.SessionDescription,
+                        StartTime = startTime,
+                        EndTime = endTime,
+                        CreatedAt = DateTime.Now,
+                        CreatedBy = _principleService.GetLoginId(),
+                    };
+                    session = _sessionRepo.CreateSession(session);
+
+                    var forum = new Forum()
+                    {
+                        SessionId = session.Id,
+                        ForumName = req.ForumName,
+                        ForumDescription = req.ForumDescription,
+                        CreatedAt = DateTime.Now,
+                        CreatedBy = _principleService.GetLoginId(),
+                    };
+                    _forumRepo.CreateForum(forum);
+
+                    response = new InsertResDto()
+                    {
+                        Id = session.Id,
+                        Message = "Session successfully created",
+                    };
+
+                    trx.Commit();
+                }
+                catch
+                {
+                    trx.Rollback();
+                    throw;
+                }
+            }
+        }
+
         return response;
     }
 }

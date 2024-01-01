@@ -4,6 +4,7 @@ using LmsApi.Dto.Class;
 using LmsApi.IRepo;
 using LmsApi.IService;
 using LmsApi.Model;
+using System.Globalization;
 
 namespace LmsApi.Service;
 
@@ -15,6 +16,9 @@ public class ClassService : IClassService
     readonly ISessionRepo _sessionRepo;
     readonly ILMSFileRepo _fileRepo;
     readonly IPrincipleService _principleService;
+
+    readonly string IsoDateFormat = "yyyy-MM-dd";
+    readonly string IsoTimeFormat = "HH:mm";
 
     public ClassService
     (
@@ -120,8 +124,6 @@ public class ClassService : IClassService
 
     List<LearningsResDto> GetClassLearningsSessionsRes(Class cls)
     {
-        const string isoDateFormat = "yyyy-MM-dd";
-        const string isoTimeFormat = "HH:mm";
         var learningList = _learningRepo.GetLearningListByClass(cls.Id);
         var learningListRes = learningList
                                 .Select(l =>
@@ -134,8 +136,8 @@ public class ClassService : IClassService
                                                                     Id = s.Id,
                                                                     SessionName = s.SessionName,
                                                                     SessionDescription = s.SessionDescription,
-                                                                    StartTime = s.StartTime.ToString(isoTimeFormat),
-                                                                    EndTime = s.EndTime.ToString(isoTimeFormat),
+                                                                    StartTime = s.StartTime.ToString(IsoTimeFormat),
+                                                                    EndTime = s.EndTime.ToString(IsoTimeFormat),
                                                                 }
                                                             )
                                                             .ToList();
@@ -143,7 +145,7 @@ public class ClassService : IClassService
                                     {
                                         LearningName = l.LearningName,
                                         LearningDescription = l.LearningDescription,
-                                        LearningDate = l.LearningDate.ToString(isoDateFormat),
+                                        LearningDate = l.LearningDate.ToString(IsoDateFormat),
                                         SessionList = sessionListRes,
                                     };
                                     return learningRes;
@@ -206,6 +208,34 @@ public class ClassService : IClassService
                         }
                     )
                     .ToList();
+        return response;
+    }
+
+    public InsertResDto CreateClassLearning(int classId, LearningInsertReqDto req)
+    {
+        DateOnly learningDate;
+        var parseSuccess = DateOnly.TryParseExact(req.LearningDate, IsoDateFormat, CultureInfo.CurrentCulture, DateTimeStyles.None, out learningDate);
+        if (parseSuccess == false)
+        {
+            throw new Exception("Error parsing learningDate, please use ISO format");
+        }
+
+        var learning = new Learning()
+        {
+            ClassId = classId,
+            LearningName = req.LearningName,
+            LearningDescription = req.LearningDescription,
+            LearningDate = learningDate,
+            CreatedAt = DateTime.Now,
+            CreatedBy = _principleService.GetLoginId(),
+        };
+        learning = _learningRepo.CreateLearning(learning);
+
+        var response = new InsertResDto()
+        {
+            Id = learning.Id,
+            Message = "Learning successfully created",
+        };
         return response;
     }
 }

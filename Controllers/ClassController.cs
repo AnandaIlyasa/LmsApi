@@ -17,7 +17,7 @@ public class ClassController : ControllerBase
     }
 
     [HttpPost]
-    public InsertResDto Insert(ClassInsertReqDto req)
+    public InsertResDto CreateClass(ClassInsertReqDto req)
     {
         var response = _classService.CreateNewClass(req);
         return response;
@@ -55,6 +55,13 @@ public class ClassController : ControllerBase
     public InsertResDto EnrollClass(int classId)
     {
         var response = _classService.EnrollClass(classId);
+        return response;
+    }
+
+    [HttpPost("{classId}/learnings")]
+    public InsertResDto CreateLearning(int classId, LearningInsertReqDto req)
+    {
+        var response = _classService.CreateClassLearning(classId, req);
         return response;
     }
 }

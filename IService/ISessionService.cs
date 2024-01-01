@@ -6,6 +6,7 @@ namespace LmsApi.IService;
 
 public interface ISessionService
 {
+    InsertResDto CreateSession(SessionInsertReqDto req);
     SessionAttendance? GetStudentAttendanceStatus(int sessionId);
     InsertResDto AttendSession(int sessionId);
     UpdateResDto ApproveAttendance(int sessionAttendanceId);

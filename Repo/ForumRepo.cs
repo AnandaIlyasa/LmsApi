@@ -13,6 +13,13 @@ public class ForumRepo : IForumRepo
         _context = context;
     }
 
+    public Forum CreateForum(Forum forum)
+    {
+        _context.Forums.Add(forum);
+        _context.SaveChanges();
+        return forum;
+    }
+
     public Forum GetForumBySession(int sessionId)
     {
         var forum = _context.Forums
