@@ -213,25 +213,21 @@ public class TaskService : ITaskService
         if (submission != null)
         {
             var submissionQuestionList = _submissionDetailQuestionRepo.GetStudentSubmissionDetailQuestionByTask(taskId, studentId);
-            submissionQuestionList.ForEach(sq =>
-            {
-                if (sq.ChoiceOption != null && sq.ChoiceOption.IsCorrect) correctOptionCount++;
-            });
             submissionQuestionListRes = submissionQuestionList
-                                            .Select(sq =>
+                                        .Select(sq =>
+                                        {
+                                            if (sq.ChoiceOption != null && sq.ChoiceOption.IsCorrect) correctOptionCount++;
+
+                                            var submissionQuestionRes = new SubmissionDetailQuestionsResDto()
                                             {
-                                                if (sq.ChoiceOption != null && sq.ChoiceOption.IsCorrect) correctOptionCount++;
+                                                QuestionId = sq.QuestionId,
+                                                ChoiceOptionId = sq.ChoiceOptionId,
+                                                EssayAnswerContent = sq.EssayAnswerContent,
+                                            };
 
-                                                var submissionQuestionRes = new SubmissionDetailQuestionsResDto()
-                                                {
-                                                    QuestionId = sq.QuestionId,
-                                                    ChoiceOptionId = sq.ChoiceOptionId,
-                                                    EssayAnswerContent = sq.EssayAnswerContent,
-                                                };
-
-                                                return submissionQuestionRes;
-                                            })
-                                            .ToList();
+                                            return submissionQuestionRes;
+                                        })
+                                        .ToList();
 
 
             var submissionFileList = _submissionDetailFileRepo.GetStudentSubmissionDetailFileByTask(taskId, studentId);
@@ -268,6 +264,7 @@ public class TaskService : ITaskService
                 MultipleChoiceScore = multipleChoiceScore,
                 SubmissionDetailFileList = submissionFileListRes,
                 SubmissionDetailQuestionList = submissionQuestionListRes,
+                CreatedAt = submission.CreatedAt.ToString(IsoDateTimeFormat),
             },
         };
         return response;
