@@ -1,11 +1,11 @@
 ﻿using LmsApi.Config;
 using LmsApi.Constant;
 using LmsApi.Dto;
+using LmsApi.Dto.Material;
 using LmsApi.Dto.Session;
 using LmsApi.IRepo;
 using LmsApi.IService;
 using LmsApi.Model;
-using System.Diagnostics;
 using System.Globalization;
 
 namespace LmsApi.Service;
@@ -17,6 +17,7 @@ public class SessionService : ISessionService
     readonly ISessionMaterialRepo _sessionMaterialRepo;
     readonly ISessionTaskRepo _sessionTaskRepo;
     readonly ISessionMaterialFileRepo _sessionMaterialFileRepo;
+    readonly ILMSFileRepo _fileRepo;
     readonly IForumRepo _forumRepo;
     readonly IForumCommentRepo _forumCommentRepo;
     readonly IUserRepo _userRepo;
@@ -32,6 +33,7 @@ public class SessionService : ISessionService
         ISessionMaterialRepo sessionMaterialRepo,
         ISessionTaskRepo sessionTaskRepo,
         ISessionMaterialFileRepo sessionMaterialFileRepo,
+        ILMSFileRepo fileRepo,
         IForumRepo forumRepo,
         IForumCommentRepo forumCommentRepo,
         IUserRepo userRepo,
@@ -43,6 +45,7 @@ public class SessionService : ISessionService
         _sessionMaterialRepo = sessionMaterialRepo;
         _sessionTaskRepo = sessionTaskRepo;
         _sessionMaterialFileRepo = sessionMaterialFileRepo;
+        _fileRepo = fileRepo;
         _forumRepo = forumRepo;
         _forumCommentRepo = forumCommentRepo;
         _userRepo = userRepo;
@@ -299,6 +302,66 @@ public class SessionService : ISessionService
                     {
                         Id = session.Id,
                         Message = "Session successfully created",
+                    };
+
+                    trx.Commit();
+                }
+                catch
+                {
+                    trx.Rollback();
+                    throw;
+                }
+            }
+        }
+
+        return response;
+    }
+
+    public InsertResDto CreateMaterial(int sessionId, MaterialInsertReqDto req)
+    {
+        InsertResDto response;
+        using (var context = new DBContextConfig())
+        {
+            using (var trx = context.Database.BeginTransaction())
+            {
+                try
+                {
+                    var material = new SessionMaterial()
+                    {
+                        SessionId = sessionId,
+                        MaterialName = req.MaterialName,
+                        MaterialDescription = req.MaterialDescription,
+                        CreatedBy = _principleService.GetLoginId(),
+                        CreatedAt = DateTime.Now,
+                    };
+                    material = _sessionMaterialRepo.CreateSessionMaterial(material);
+
+                    foreach (var item in req.MaterialFileList)
+                    {
+                        var file = new LMSFile()
+                        {
+                            FileContent = item.File.FileContent,
+                            FileExtension = item.File.FileExtension,
+                            CreatedBy = _principleService.GetLoginId(),
+                            CreatedAt = DateTime.Now,
+                        };
+                        file = _fileRepo.CreateNewFile(file);
+
+                        var materialFile = new SessionMaterialFile()
+                        {
+                            FileId = file.Id,
+                            FileName = item.FileName,
+                            MaterialId = material.Id,
+                            CreatedBy = _principleService.GetLoginId(),
+                            CreatedAt = DateTime.Now,
+                        };
+                        _sessionMaterialFileRepo.CreateMaterialFile(materialFile);
+                    }
+
+                    response = new InsertResDto()
+                    {
+                        Id = material.Id,
+                        Message = "Material successfully created",
                     };
 
                     trx.Commit();

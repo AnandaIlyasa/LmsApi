@@ -16,6 +16,20 @@ public class TaskController : ControllerBase
         _taskService = taskService;
     }
 
+    [HttpPost]
+    public InsertResDto CreateTask([FromBody] TaskInsertReqDto req)
+    {
+        var response = _taskService.CreateTask(req);
+        return response;
+    }
+
+    [HttpPost("{taskId}/questions-taskFiles")]
+    public InsertResDto CreateQuestionTaskFile(int taskId, [FromBody] TaskQuestionsTaskFilesInsertReqDto req)
+    {
+        var response = _taskService.CreateTaskQuestionsTaskFiles(taskId, req);
+        return response;
+    }
+
     [HttpPost("{taskId}")]
     public InsertResDto SubmitTask(int taskId, [FromBody] TaskSubmissionDetailsReqDto req)
     {

@@ -1,6 +1,4 @@
-﻿using LmsApi.Dto.File;
-
-namespace LmsApi.Dto.Task;
+﻿namespace LmsApi.Dto.Task;
 
 public class TaskFileResDto
 {

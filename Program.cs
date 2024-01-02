@@ -49,9 +49,11 @@ public class Program
         builder.Services.AddScoped<IForumCommentRepo, ForumCommentRepo>();
         builder.Services.AddScoped<ILearningRepo, LearningRepo>();
         builder.Services.AddScoped<ISessionMaterialFileRepo, SessionMaterialFileRepo>();
+        builder.Services.AddScoped<ITaskRepo, TaskRepo>();
         builder.Services.AddScoped<ITaskQuestionRepo, TaskQuestionRepo>();
         builder.Services.AddScoped<ITaskMultipleChoiceOptionRepo, TaskMultipleChoiceOptionRepo>();
         builder.Services.AddScoped<ITaskFileRepo, TaskFileRepo>();
+        builder.Services.AddScoped<ITaskDetailRepo, TaskDetailRepo>();
 
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IClassService, ClassService>();

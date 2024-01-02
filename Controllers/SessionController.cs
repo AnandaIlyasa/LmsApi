@@ -1,5 +1,7 @@
 ﻿using LmsApi.Dto;
+using LmsApi.Dto.Material;
 using LmsApi.Dto.Session;
+using LmsApi.Dto.Task;
 using LmsApi.IService;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,6 +31,13 @@ public class SessionController : ControllerBase
     public InsertResDto CreateSession(SessionInsertReqDto req)
     {
         var response = _sessionService.CreateSession(req);
+        return response;
+    }
+
+    [HttpPost("{sessionId}/materials")]
+    public InsertResDto CreateMaterial(int sessionId, [FromBody] MaterialInsertReqDto req)
+    {
+        var response = _sessionService.CreateMaterial(sessionId, req);
         return response;
     }
 

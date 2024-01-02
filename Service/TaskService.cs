@@ -6,8 +6,6 @@ using LmsApi.Dto.Task;
 using LmsApi.IRepo;
 using LmsApi.IService;
 using LmsApi.Model;
-using LmsApi.Repo;
-using System.Threading.Tasks;
 
 namespace LmsApi.Service;
 
@@ -17,9 +15,11 @@ public class TaskService : ITaskService
     readonly ISubmissionDetailQuestionRepo _submissionDetailQuestionRepo;
     readonly ISubmissionDetailFileRepo _submissionDetailFileRepo;
     readonly ILMSFileRepo _fileRepo;
+    readonly ITaskRepo _taskRepo;
     readonly ITaskQuestionRepo _questionRepo;
     readonly ITaskFileRepo _taskFileRepo;
     readonly ITaskMultipleChoiceOptionRepo _multipleChoiceOptionRepo;
+    readonly ITaskDetailRepo _taskDetailRepo;
     readonly IPrincipleService _principleService;
 
     readonly string IsoDateTimeFormat = "yyyy-MM-dd HH:mm";
@@ -30,9 +30,11 @@ public class TaskService : ITaskService
         ISubmissionDetailQuestionRepo submissionDetailRepo,
         ISubmissionDetailFileRepo submissionDetailFileRepo,
         ILMSFileRepo fileRepo,
+        ITaskRepo taskRepo,
         ITaskQuestionRepo questionRepo,
         ITaskFileRepo taskFileRepo,
         ITaskMultipleChoiceOptionRepo multipleChoiceOptionRepo,
+        ITaskDetailRepo taskDetailRepo,
         IPrincipleService principleService
     )
     {
@@ -40,9 +42,11 @@ public class TaskService : ITaskService
         _submissionDetailQuestionRepo = submissionDetailRepo;
         _submissionDetailFileRepo = submissionDetailFileRepo;
         _fileRepo = fileRepo;
+        _taskRepo = taskRepo;
         _questionRepo = questionRepo;
         _taskFileRepo = taskFileRepo;
         _multipleChoiceOptionRepo = multipleChoiceOptionRepo;
+        _taskDetailRepo = taskDetailRepo;
         _principleService = principleService;
     }
 
@@ -66,7 +70,7 @@ public class TaskService : ITaskService
         return response;
     }
 
-    private List<TaskQuestionResDto> GetQuestionsRes(int taskId)
+    private List<TaskQuestionsDto> GetQuestionsRes(int taskId)
     {
         var questionList = _questionRepo.GetQuestionListByTask(taskId);
         foreach (var question in questionList)
@@ -84,12 +88,12 @@ public class TaskService : ITaskService
         var questionListRes = questionList
                             .Select(q =>
                             {
-                                List<MultipleChoiceOptionsResDto>? optionListRes = null;
+                                List<MultipleChoiceOptionsDto>? optionListRes = null;
                                 if (q.OptionList != null && q.OptionList.Count > 0)
                                 {
                                     optionListRes = q.OptionList
                                                     .Select(o =>
-                                                        new MultipleChoiceOptionsResDto()
+                                                        new MultipleChoiceOptionsDto()
                                                         {
                                                             Id = o.Id,
                                                             OptionChar = o.OptionChar,
@@ -99,7 +103,7 @@ public class TaskService : ITaskService
                                                     .ToList();
                                 }
 
-                                var questionRes = new TaskQuestionResDto()
+                                var questionRes = new TaskQuestionsDto()
                                 {
                                     Id = q.Id,
                                     QuestionContent = q.QuestionContent,
@@ -365,6 +369,122 @@ public class TaskService : ITaskService
                     {
                         Id = submission.Id,
                         Message = "Task successfully submitted",
+                    };
+
+                    trx.Commit();
+                }
+                catch
+                {
+                    trx.Rollback();
+                    throw;
+                }
+            }
+        }
+
+        return response;
+    }
+
+    public InsertResDto CreateTask(TaskInsertReqDto req)
+    {
+        var task = new LMSTask()
+        {
+            SessionId = req.SessionId,
+            TaskName = req.TaskName,
+            TaskDescription = req.TaskDescription,
+            Duration = req.Duration,
+            CreatedBy = _principleService.GetLoginId(),
+            CreatedAt = DateTime.Now,
+        };
+        _taskRepo.CreateTask(task);
+
+        var response = new InsertResDto()
+        {
+            Id = task.Id,
+            Message = "Task successfully created",
+        };
+
+        return response;
+    }
+
+    public InsertResDto CreateTaskQuestionsTaskFiles(int taskId, TaskQuestionsTaskFilesInsertReqDto req)
+    {
+        InsertResDto response;
+        using (var context = new DBContextConfig())
+        {
+            using (var trx = context.Database.BeginTransaction())
+            {
+                try
+                {
+                    foreach (var questionReq in req.TaskQuestionList)
+                    {
+                        var question = new TaskQuestion()
+                        {
+                            QuestionType = questionReq.QuestionType,
+                            QuestionContent = questionReq.QuestionContent,
+                            CreatedBy = _principleService.GetLoginId(),
+                            CreatedAt = DateTime.Now,
+                        };
+                        question = _questionRepo.CreateQuestion(question);
+
+                        if (question.QuestionType == QuestionType.MultipleChoice)
+                        {
+                            foreach (var optionReq in questionReq.OptionList)
+                            {
+                                var option = new TaskMultipleChoiceOption()
+                                {
+                                    QuestionId = question.Id,
+                                    OptionChar = optionReq.OptionChar,
+                                    OptionText = optionReq.OptionText,
+                                    CreatedBy = _principleService.GetLoginId(),
+                                    CreatedAt = DateTime.Now,
+                                };
+                                _multipleChoiceOptionRepo.CreateOption(option);
+                            }
+                        }
+
+                        var taskDetail = new TaskDetail()
+                        {
+                            TaskId = taskId,
+                            TaskQuestionId = question.Id,
+                            CreatedBy = _principleService.GetLoginId(),
+                            CreatedAt = DateTime.Now,
+                        };
+                        _taskDetailRepo.CreateTaskDetail(taskDetail);
+                    }
+
+                    foreach (var taskFileReq in req.TaskFileList)
+                    {
+                        var file = new LMSFile()
+                        {
+                            FileContent = taskFileReq.File.FileContent,
+                            FileExtension = taskFileReq.File.FileExtension,
+                            CreatedBy = _principleService.GetLoginId(),
+                            CreatedAt = DateTime.Now,
+                        };
+                        file = _fileRepo.CreateNewFile(file);
+
+                        var taskFile = new TaskFile()
+                        {
+                            FileId = file.Id,
+                            FileName = taskFileReq.FileName,
+                            CreatedBy = _principleService.GetLoginId(),
+                            CreatedAt = DateTime.Now,
+                        };
+                        taskFile = _taskFileRepo.CreateTaskFile(taskFile);
+
+                        var taskDetail = new TaskDetail()
+                        {
+                            TaskId = taskId,
+                            TaskFileId = taskFile.Id,
+                            CreatedBy = _principleService.GetLoginId(),
+                            CreatedAt = DateTime.Now,
+                        };
+                        _taskDetailRepo.CreateTaskDetail(taskDetail);
+                    }
+
+                    response = new InsertResDto()
+                    {
+                        Message = "Questions and task files successfully created",
                     };
 
                     trx.Commit();
