@@ -12,7 +12,4 @@ public class StudentInsertReqDto
 
     [Required(ErrorMessage = "Password is required"), MinLength(5)]
     public string? Password { get; set; }
-
-    [Required(ErrorMessage = "RoleCode is required"), StringLength(10)]
-    public string RoleCode { get; set; }
 }

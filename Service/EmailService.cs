@@ -37,7 +37,6 @@ public class EmailService : IEmailService
             try
             {
                 smtpClient.Send(mailMessage);
-                Console.WriteLine("Email sent successfully!");
             }
             catch (Exception ex)
             {

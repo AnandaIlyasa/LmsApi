@@ -78,7 +78,7 @@ public class UserService : IUserService
 
         using (var context = new DBContextConfig())
         {
-            var role = _roleRepo.GetRoleByCode(req.RoleCode);
+            var role = _roleRepo.GetRoleByCode(RoleCode.Teacher);
 
             user.RoleId = role.Id;
             user = _userRepo.CreateNewUser(user);
@@ -115,7 +115,7 @@ public class UserService : IUserService
 
         using (var context = new DBContextConfig())
         {
-            var role = _roleRepo.GetRoleByCode(req.RoleCode);
+            var role = _roleRepo.GetRoleByCode(RoleCode.Student);
 
             user.RoleId = role.Id;
             user = _userRepo.CreateNewUser(user);
