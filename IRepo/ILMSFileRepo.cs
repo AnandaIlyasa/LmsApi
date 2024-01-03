@@ -5,6 +5,5 @@ namespace LmsApi.IRepo;
 
 public interface ILMSFileRepo
 {
-    LMSFile CreateNewFile(LMSFile file);
     LMSFile GetFileById(int id);
 }

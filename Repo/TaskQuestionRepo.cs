@@ -14,13 +14,6 @@ public class TaskQuestionRepo : ITaskQuestionRepo
         _context = context;
     }
 
-    public TaskQuestion CreateQuestion(TaskQuestion question)
-    {
-        _context.TaskQuestions.Add(question);
-        _context.SaveChanges();
-        return question;
-    }
-
     public List<TaskQuestion> GetQuestionListByTask(int taskId)
     {
         var questionList = _context.TaskQuestions

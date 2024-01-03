@@ -14,13 +14,6 @@ public class SubmissionRepo : ISubmissionRepo
         _context = context;
     }
 
-    public Submission CreateNewSubmission(Submission submission)
-    {
-        _context.Submissions.Add(submission);
-        _context.SaveChanges();
-        return submission;
-    }
-
     public Submission? GetStudentSubmissionByTask(int studentId, int taskId)
     {
         var submission = _context.Submissions
@@ -49,15 +42,5 @@ public class SubmissionRepo : ISubmissionRepo
                             .Include(s => s.Student)
                             .ToList();
         return submissionList;
-    }
-
-    public int UpdateSubmissionGradeAndNotes(Submission submission)
-    {
-        var foundSubmission = _context.Submissions
-                            .Where(s => s.Id == submission.Id)
-                            .First();
-        foundSubmission.Grade = submission.Grade;
-        foundSubmission.TeacherNotes = submission.TeacherNotes;
-        return _context.SaveChanges();
     }
 }

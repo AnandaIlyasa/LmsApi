@@ -31,13 +31,6 @@ public class UserRepo : IUserRepo
         return user;
     }
 
-    public User CreateNewUser(User user)
-    {
-        _context.Users.Add(user);
-        _context.SaveChanges();
-        return user;
-    }
-
     public List<User> GetUserListByRole(string roleCode)
     {
         var userList = _context.Users
@@ -45,14 +38,5 @@ public class UserRepo : IUserRepo
                     .Where(u => u.Role.RoleCode == roleCode)
                     .ToList();
         return userList;
-    }
-
-    public int UpdateUser(User user)
-    {
-        var foundUser = _context.Users
-                        .Where(u => u.Id == user.Id)
-                        .First();
-        foundUser.Pass = user.Pass;
-        return _context.SaveChanges();
     }
 }

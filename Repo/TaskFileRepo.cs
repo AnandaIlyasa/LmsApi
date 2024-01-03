@@ -14,13 +14,6 @@ public class TaskFileRepo : ITaskFileRepo
         _context = context;
     }
 
-    public TaskFile CreateTaskFile(TaskFile taskFile)
-    {
-        _context.TaskFiles.Add(taskFile);
-        _context.SaveChanges();
-        return taskFile;
-    }
-
     public List<TaskFile> GetTaskFileList(int taskId)
     {
         var taskFileList = _context.TaskFiles

@@ -15,13 +15,6 @@ public class SubmissionDetailFileRepo : ISubmissionDetailFileRepo
         _context = context;
     }
 
-    public SubmissionDetailFile CreateNewSubmissionDetailFile(SubmissionDetailFile submissionDetailFile)
-    {
-        _context.SubmissionDetailFiles.Add(submissionDetailFile);
-        _context.SaveChanges();
-        return submissionDetailFile;
-    }
-
     public List<SubmissionDetailFile> GetStudentSubmissionDetailFileByTask(int taskId, int studentId)
     {
         var submissionFileList = _context.SubmissionDetailFiles

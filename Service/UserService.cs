@@ -6,6 +6,7 @@ using LmsApi.Config;
 using LmsApi.Dto;
 using LmsApi.Dto.User;
 using LmsApi.Constant;
+using LmsApi.Repo;
 
 namespace LmsApi.Service;
 
@@ -13,6 +14,7 @@ public class UserService : IUserService
 {
     readonly IUserRepo _userRepo;
     readonly IRoleRepo _roleRepo;
+    readonly BaseRepo _baseRepo;
     readonly IEmailService _emailService;
     readonly IPrincipleService _principleService;
 
@@ -20,13 +22,15 @@ public class UserService : IUserService
      (
         IUserRepo userRepo,
         IRoleRepo roleRepo,
+        BaseRepo baseRepo,
         IEmailService emailService,
         IPrincipleService principleService
     )
     {
         _userRepo = userRepo;
-        _emailService = emailService;
         _roleRepo = roleRepo;
+        _baseRepo = baseRepo;
+        _emailService = emailService;
         _principleService = principleService;
     }
 
@@ -69,7 +73,6 @@ public class UserService : IUserService
         {
             FullName = req.FullName,
             Email = req.Email,
-            CreatedBy = _principleService.GetLoginId(),
         };
 
         var originalPassword = Utils.Utils.GenerateRandomAlphaNumericUtil();
@@ -81,7 +84,7 @@ public class UserService : IUserService
             var role = _roleRepo.GetRoleByCode(RoleCode.Teacher);
 
             user.RoleId = role.Id;
-            user = _userRepo.CreateNewUser(user);
+            user = _baseRepo.CreateOrUpdateEntry(user);
 
             _emailService.SendEmail(req.Email, "LMS: New Teacher Has Been Created", $@"
                 <h3>Fullname: {user.FullName}</h3>
@@ -105,8 +108,6 @@ public class UserService : IUserService
         {
             FullName = req.FullName,
             Email = req.Email,
-            CreatedBy = systemId,
-            CreatedAt = DateTime.Now,
         };
 
         var originalPassword = req.Password;
@@ -118,7 +119,7 @@ public class UserService : IUserService
             var role = _roleRepo.GetRoleByCode(RoleCode.Student);
 
             user.RoleId = role.Id;
-            user = _userRepo.CreateNewUser(user);
+            user = _baseRepo.CreateOrUpdateEntry(user);
 
             _emailService.SendEmail(req.Email, "LMS: New Student Has Been Created", $@"
                 <h3>Fullname: {user.FullName}</h3>
@@ -167,15 +168,12 @@ public class UserService : IUserService
 
         var hashedPassword = BCrypt.Net.BCrypt.HashPassword(req.NewPassword, 13);
         user.Pass = hashedPassword;
-        user.UpdatedBy = _principleService.GetLoginId();
-        user.UpdatedAt = DateTime.Now;
-        var rowsAffected = _userRepo.UpdateUser(user);
+        _baseRepo.CreateOrUpdateEntry(user);
 
         _emailService.SendEmail(user.Email, "LMS: Password Has Been Changed", "<h3>Password has been changed</h3>");
 
         var response = new UpdateResDto()
         {
-            Version = rowsAffected.ToString(),
             Message = "Password successfully changed",
         };
 

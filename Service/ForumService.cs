@@ -3,19 +3,22 @@ using LmsApi.Dto.Session;
 using LmsApi.IRepo;
 using LmsApi.IService;
 using LmsApi.Model;
+using LmsApi.Repo;
 
 namespace LmsApi.Service;
 
 public class ForumService : IForumService
 {
     readonly IForumCommentRepo _forumCommentRepo;
+    readonly BaseRepo _baseRepo;
     readonly IPrincipleService _principleService;
 
     readonly string IsoDateTimeFormat = "yyyy-MM-dd HH:mm";
 
-    public ForumService(IForumCommentRepo forumCommentRepo, IPrincipleService principleService)
+    public ForumService(IForumCommentRepo forumCommentRepo, BaseRepo baseRepo, IPrincipleService principleService)
     {
         _forumCommentRepo = forumCommentRepo;
+        _baseRepo = baseRepo;
         _principleService = principleService;
     }
 
@@ -44,10 +47,8 @@ public class ForumService : IForumService
             ForumId = forumId,
             CommentContent = req.CommentContent,
             UserId = _principleService.GetLoginId(),
-            CreatedBy = _principleService.GetLoginId(),
-            CreatedAt = DateTime.Now,
         };
-        var insertedComment = _forumCommentRepo.CreateNewComment(forumComment);
+        var insertedComment = _baseRepo.CreateOrUpdateEntry(forumComment);
 
         var response = new InsertResDto()
         {

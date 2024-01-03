@@ -13,13 +13,6 @@ public class LearningRepo : ILearningRepo
         _context = context;
     }
 
-    public Learning CreateLearning(Learning learning)
-    {
-        _context.Learnings.Add(learning);
-        _context.SaveChanges();
-        return learning;
-    }
-
     public List<Learning> GetLearningListByClass(int classId)
     {
         var learningList = _context.Learnings

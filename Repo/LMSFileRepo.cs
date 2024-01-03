@@ -13,13 +13,6 @@ public class LMSFileRepo : ILMSFileRepo
         _context = context;
     }
 
-    public LMSFile CreateNewFile(LMSFile file)
-    {
-        _context.LMSFiles.Add(file);
-        _context.SaveChanges();
-        return file;
-    }
-
     public LMSFile GetFileById(int id)
     {
         var file = _context.LMSFiles

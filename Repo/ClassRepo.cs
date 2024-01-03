@@ -70,13 +70,6 @@ public class ClassRepo : IClassRepo
         return classList;
     }
 
-    public Class CreateNewClass(Class newClass)
-    {
-        _context.Classes.Add(newClass);
-        _context.SaveChanges();
-        return newClass;
-    }
-
     public List<Class> GetClassList()
     {
         var classList = _context.Classes

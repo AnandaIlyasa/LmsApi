@@ -4,6 +4,7 @@ using LmsApi.Dto.Class;
 using LmsApi.IRepo;
 using LmsApi.IService;
 using LmsApi.Model;
+using LmsApi.Repo;
 using System.Globalization;
 
 namespace LmsApi.Service;
@@ -11,10 +12,10 @@ namespace LmsApi.Service;
 public class ClassService : IClassService
 {
     readonly IClassRepo _classRepo;
-    readonly IStudentClassRepo _studentClassRepo;
     readonly ILearningRepo _learningRepo;
     readonly ISessionRepo _sessionRepo;
     readonly ILMSFileRepo _fileRepo;
+    readonly BaseRepo _baseRepo;
     readonly IPrincipleService _principleService;
 
     readonly string IsoDateFormat = "yyyy-MM-dd";
@@ -23,18 +24,18 @@ public class ClassService : IClassService
     public ClassService
     (
         IClassRepo classRepo,
-        IStudentClassRepo studentClassRepo,
         ILearningRepo learningRepo,
         ISessionRepo sessionRepo,
         ILMSFileRepo fileRepo,
+        BaseRepo baseRepo,
         IPrincipleService principleService
     )
     {
         _classRepo = classRepo;
-        _studentClassRepo = studentClassRepo;
         _learningRepo = learningRepo;
         _sessionRepo = sessionRepo;
         _fileRepo = fileRepo;
+        _baseRepo = baseRepo;
         _principleService = principleService;
     }
 
@@ -88,10 +89,8 @@ public class ClassService : IClassService
         {
             StudentId = studentId,
             ClassId = classId,
-            CreatedAt = DateTime.Now,
-            CreatedBy = studentId,
         };
-        studentClass = _studentClassRepo.CreateNewStudentClass(studentClass);
+        studentClass = _baseRepo.CreateOrUpdateEntry(studentClass);
 
         var response = new InsertResDto()
         {
@@ -166,11 +165,9 @@ public class ClassService : IClassService
             {
                 FileContent = req.ClassImage.FileContent,
                 FileExtension = req.ClassImage.FileExtension,
-                CreatedAt = DateTime.Now,
-                CreatedBy = _principleService.GetLoginId(),
             };
 
-            var insertedFile = _fileRepo.CreateNewFile(classImage);
+            classImage = _baseRepo.CreateOrUpdateEntry(classImage);
 
             var newClass = new Class()
             {
@@ -179,10 +176,8 @@ public class ClassService : IClassService
                 ClassImageId = classImage.Id,
                 ClassDescription = req.ClassDescription,
                 TeacherId = req.TeacherId,
-                CreatedAt = DateTime.Now,
-                CreatedBy = _principleService.GetLoginId(),
             };
-            var insertedClass = _classRepo.CreateNewClass(newClass);
+            var insertedClass = _baseRepo.CreateOrUpdateEntry(newClass);
 
             response = new InsertResDto()
             {
@@ -226,10 +221,8 @@ public class ClassService : IClassService
             LearningName = req.LearningName,
             LearningDescription = req.LearningDescription,
             LearningDate = learningDate,
-            CreatedAt = DateTime.Now,
-            CreatedBy = _principleService.GetLoginId(),
         };
-        learning = _learningRepo.CreateLearning(learning);
+        learning = _baseRepo.CreateOrUpdateEntry(learning);
 
         var response = new InsertResDto()
         {

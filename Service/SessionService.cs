@@ -6,6 +6,7 @@ using LmsApi.Dto.Session;
 using LmsApi.IRepo;
 using LmsApi.IService;
 using LmsApi.Model;
+using LmsApi.Repo;
 using System.Globalization;
 
 namespace LmsApi.Service;
@@ -21,6 +22,7 @@ public class SessionService : ISessionService
     readonly IForumRepo _forumRepo;
     readonly IForumCommentRepo _forumCommentRepo;
     readonly IUserRepo _userRepo;
+    readonly BaseRepo _baseRepo;
     readonly IPrincipleService _principleService;
 
     readonly string IsoDateTimeFormat = "yyyy-MM-dd HH:mm";
@@ -37,6 +39,7 @@ public class SessionService : ISessionService
         IForumRepo forumRepo,
         IForumCommentRepo forumCommentRepo,
         IUserRepo userRepo,
+        BaseRepo baseRepo,
         IPrincipleService principleService
     )
     {
@@ -49,6 +52,7 @@ public class SessionService : ISessionService
         _forumRepo = forumRepo;
         _forumCommentRepo = forumCommentRepo;
         _userRepo = userRepo;
+        _baseRepo = baseRepo;
         _principleService = principleService;
     }
 
@@ -59,10 +63,8 @@ public class SessionService : ISessionService
             StudentId = _principleService.GetLoginId(),
             SessionId = sessionId,
             IsApproved = false,
-            CreatedAt = DateTime.Now,
-            CreatedBy = _principleService.GetLoginId(),
         };
-        sessionAttendance = _sessionAttendanceRepo.CreateNewSessionAttendance(sessionAttendance);
+        sessionAttendance = _baseRepo.CreateOrUpdateEntry(sessionAttendance);
 
         var response = new InsertResDto()
         {
@@ -70,12 +72,6 @@ public class SessionService : ISessionService
             Message = "Attend success, please wait for teacher approval",
         };
         return response;
-    }
-
-    public SessionAttendance? GetStudentAttendanceStatus(int sessionId)
-    {
-        var sessionAttendance = _sessionAttendanceRepo.GetSessionAttendanceStatus(sessionId, _principleService.GetLoginId());
-        return sessionAttendance;
     }
 
     public SessionDetailResDto GetSessionContentsById(int sessionId)
@@ -92,16 +88,13 @@ public class SessionService : ISessionService
         if (user.Role.RoleCode == RoleCode.Student)
         {
             var sessionAttendance = _sessionAttendanceRepo.GetSessionAttendanceStatus(sessionId, userId);
-            if (sessionAttendance == null || sessionAttendance.IsApproved == false)
+            if (sessionAttendance == null)
             {
-                response = new SessionDetailResDto()
-                {
-                    SessionName = session.SessionName,
-                    SessionDescription = session.SessionDescription,
-                    StartTime = session.StartTime.ToString(IsoTimeFormat),
-                    EndTime = session.EndTime.ToString(IsoTimeFormat),
-                    AttendanceApproved = sessionAttendance == null ? null : sessionAttendance.IsApproved,
-                };
+                throw new Exception("You need to attend the session to be able to see session contents");
+            }
+            else if (sessionAttendance.IsApproved == false)
+            {
+                throw new Exception("Wait for teacher approval to be able to see session contents");
             }
             else
             {
@@ -236,18 +229,12 @@ public class SessionService : ISessionService
 
     public UpdateResDto ApproveAttendance(int sessionAttendanceId)
     {
-        var sessionAttendance = new SessionAttendance()
-        {
-            Id = sessionAttendanceId,
-        };
-        sessionAttendance.UpdatedBy = _principleService.GetLoginId();
-        sessionAttendance.UpdatedAt = DateTime.Now;
+        var sessionAttendance = _sessionAttendanceRepo.GetSessionAttendanceById(sessionAttendanceId);
         sessionAttendance.IsApproved = true;
-        var rowsAffected = _sessionAttendanceRepo.UpdateSessionAttendance(sessionAttendance);
+        _baseRepo.CreateOrUpdateEntry(sessionAttendance);
 
         var response = new UpdateResDto()
         {
-            Version = rowsAffected.ToString(),
             Message = "Attendance approval status successfully updated",
         };
         return response;
@@ -283,20 +270,16 @@ public class SessionService : ISessionService
                         SessionDescription = req.SessionDescription,
                         StartTime = startTime,
                         EndTime = endTime,
-                        CreatedAt = DateTime.Now,
-                        CreatedBy = _principleService.GetLoginId(),
                     };
-                    session = _sessionRepo.CreateSession(session);
+                    session = _baseRepo.CreateOrUpdateEntry(session);
 
                     var forum = new Forum()
                     {
                         SessionId = session.Id,
                         ForumName = req.ForumName,
                         ForumDescription = req.ForumDescription,
-                        CreatedAt = DateTime.Now,
-                        CreatedBy = _principleService.GetLoginId(),
                     };
-                    _forumRepo.CreateForum(forum);
+                    _baseRepo.CreateOrUpdateEntry(forum);
 
                     response = new InsertResDto()
                     {
@@ -331,10 +314,8 @@ public class SessionService : ISessionService
                         SessionId = sessionId,
                         MaterialName = req.MaterialName,
                         MaterialDescription = req.MaterialDescription,
-                        CreatedBy = _principleService.GetLoginId(),
-                        CreatedAt = DateTime.Now,
                     };
-                    material = _sessionMaterialRepo.CreateSessionMaterial(material);
+                    material = _baseRepo.CreateOrUpdateEntry(material);
 
                     foreach (var item in req.MaterialFileList)
                     {
@@ -342,20 +323,16 @@ public class SessionService : ISessionService
                         {
                             FileContent = item.File.FileContent,
                             FileExtension = item.File.FileExtension,
-                            CreatedBy = _principleService.GetLoginId(),
-                            CreatedAt = DateTime.Now,
                         };
-                        file = _fileRepo.CreateNewFile(file);
+                        file = _baseRepo.CreateOrUpdateEntry(file);
 
                         var materialFile = new SessionMaterialFile()
                         {
                             FileId = file.Id,
                             FileName = item.FileName,
                             MaterialId = material.Id,
-                            CreatedBy = _principleService.GetLoginId(),
-                            CreatedAt = DateTime.Now,
                         };
-                        _sessionMaterialFileRepo.CreateMaterialFile(materialFile);
+                        _baseRepo.CreateOrUpdateEntry(materialFile);
                     }
 
                     response = new InsertResDto()

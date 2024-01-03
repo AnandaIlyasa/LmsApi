@@ -14,13 +14,6 @@ public class SessionMaterialFileRepo : ISessionMaterialFileRepo
         _context = context;
     }
 
-    public SessionMaterialFile CreateMaterialFile(SessionMaterialFile materialFile)
-    {
-        _context.SessionMaterialFiles.Add(materialFile);
-        _context.SaveChanges();
-        return materialFile;
-    }
-
     public List<SessionMaterialFile> GetSessionMaterialFileListByMaterial(int materialId)
     {
         var materialFileList = _context.SessionMaterialFiles

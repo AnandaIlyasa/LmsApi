@@ -14,13 +14,6 @@ public class SubmissionDetailQuestionRepo : ISubmissionDetailQuestionRepo
         _context = context;
     }
 
-    public SubmissionDetailQuestion CreateNewSubmissionDetailQuestion(SubmissionDetailQuestion submissionDetailQuestion)
-    {
-        _context.SubmissionDetailQuestions.Add(submissionDetailQuestion);
-        _context.SaveChanges();
-        return submissionDetailQuestion;
-    }
-
     public List<SubmissionDetailQuestion> GetStudentSubmissionDetailQuestionByTask(int taskId, int studentId)
     {
         var submissionQuestionList = _context.SubmissionDetailQuestions

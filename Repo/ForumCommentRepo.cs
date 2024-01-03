@@ -14,13 +14,6 @@ public class ForumCommentRepo : IForumCommentRepo
         _context = context;
     }
 
-    public ForumComment CreateNewComment(ForumComment forumComment)
-    {
-        _context.ForumComments.Add(forumComment);
-        _context.SaveChanges();
-        return forumComment;
-    }
-
     public List<ForumComment> GetForumCommentListByForum(int forumId)
     {
         var commentList = _context.ForumComments

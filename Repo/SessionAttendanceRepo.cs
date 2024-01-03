@@ -15,10 +15,11 @@ public class SessionAttendanceRepo : ISessionAttendanceRepo
         _context = context;
     }
 
-    public SessionAttendance CreateNewSessionAttendance(SessionAttendance sessionAttendance)
+    public SessionAttendance GetSessionAttendanceById(int id)
     {
-        _context.SessionAttendances.Add(sessionAttendance);
-        _context.SaveChanges();
+        var sessionAttendance = _context.SessionAttendances
+                                .Where(sa => sa.Id == id)
+                                .First();
         return sessionAttendance;
     }
 
@@ -38,14 +39,5 @@ public class SessionAttendanceRepo : ISessionAttendanceRepo
                                 .Where(sa => sa.StudentId == studentId && sa.SessionId == sessionId)
                                 .FirstOrDefault();
         return sessionAttendance;
-    }
-
-    public int UpdateSessionAttendance(SessionAttendance sessionAttendance)
-    {
-        var attendance = _context.SessionAttendances
-                        .Where(sa => sa.Id == sessionAttendance.Id)
-                        .First();
-        attendance.IsApproved = sessionAttendance.IsApproved;
-        return _context.SaveChanges();
     }
 }

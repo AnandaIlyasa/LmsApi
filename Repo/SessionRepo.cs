@@ -14,13 +14,6 @@ public class SessionRepo : ISessionRepo
         _context = context;
     }
 
-    public Session CreateSession(Session session)
-    {
-        _context.Sessions.Add(session);
-        _context.SaveChanges();
-        return session;
-    }
-
     public Session GetSessionById(int sessionId)
     {
         var session = _context.Sessions

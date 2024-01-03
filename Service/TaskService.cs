@@ -6,6 +6,7 @@ using LmsApi.Dto.Task;
 using LmsApi.IRepo;
 using LmsApi.IService;
 using LmsApi.Model;
+using LmsApi.Repo;
 
 namespace LmsApi.Service;
 
@@ -15,11 +16,10 @@ public class TaskService : ITaskService
     readonly ISubmissionDetailQuestionRepo _submissionDetailQuestionRepo;
     readonly ISubmissionDetailFileRepo _submissionDetailFileRepo;
     readonly ILMSFileRepo _fileRepo;
-    readonly ITaskRepo _taskRepo;
     readonly ITaskQuestionRepo _questionRepo;
     readonly ITaskFileRepo _taskFileRepo;
     readonly ITaskMultipleChoiceOptionRepo _multipleChoiceOptionRepo;
-    readonly ITaskDetailRepo _taskDetailRepo;
+    readonly BaseRepo _baseRepo;
     readonly IPrincipleService _principleService;
 
     readonly string IsoDateTimeFormat = "yyyy-MM-dd HH:mm";
@@ -30,11 +30,10 @@ public class TaskService : ITaskService
         ISubmissionDetailQuestionRepo submissionDetailRepo,
         ISubmissionDetailFileRepo submissionDetailFileRepo,
         ILMSFileRepo fileRepo,
-        ITaskRepo taskRepo,
         ITaskQuestionRepo questionRepo,
         ITaskFileRepo taskFileRepo,
         ITaskMultipleChoiceOptionRepo multipleChoiceOptionRepo,
-        ITaskDetailRepo taskDetailRepo,
+        BaseRepo baseRepo,
         IPrincipleService principleService
     )
     {
@@ -42,11 +41,10 @@ public class TaskService : ITaskService
         _submissionDetailQuestionRepo = submissionDetailRepo;
         _submissionDetailFileRepo = submissionDetailFileRepo;
         _fileRepo = fileRepo;
-        _taskRepo = taskRepo;
         _questionRepo = questionRepo;
         _taskFileRepo = taskFileRepo;
         _multipleChoiceOptionRepo = multipleChoiceOptionRepo;
-        _taskDetailRepo = taskDetailRepo;
+        _baseRepo = baseRepo;
         _principleService = principleService;
     }
 
@@ -294,13 +292,10 @@ public class TaskService : ITaskService
 
         submission.Grade = (multipleChoiceScore + req.Grade) / 2.0d;
         submission.TeacherNotes = req.TeacherNotes;
-        submission.UpdatedAt = DateTime.Now;
-        submission.UpdatedBy = _principleService.GetLoginId();
-        var affectedRows = _submissionRepo.UpdateSubmissionGradeAndNotes(submission);
+        _baseRepo.CreateOrUpdateEntry(submission);
 
         var response = new UpdateResDto()
         {
-            Version = affectedRows.ToString(),
             Message = "Score and notes successfully inserted",
         };
         return response;
@@ -321,10 +316,8 @@ public class TaskService : ITaskService
                     {
                         StudentId = _principleService.GetLoginId(),
                         TaskId = taskId,
-                        CreatedAt = DateTime.Now,
-                        CreatedBy = _principleService.GetLoginId(),
                     };
-                    submission = _submissionRepo.CreateNewSubmission(submission);
+                    submission = _baseRepo.CreateOrUpdateEntry(submission);
 
                     foreach (var submissionFileReq in req.SubmissionDetailFiles)
                     {
@@ -334,20 +327,16 @@ public class TaskService : ITaskService
                             {
                                 FileContent = fileReq.FileContent,
                                 FileExtension = fileReq.FileExtension,
-                                CreatedAt = DateTime.Now,
-                                CreatedBy = studentId,
                             };
-                            file = _fileRepo.CreateNewFile(file);
+                            file = _baseRepo.CreateOrUpdateEntry(file);
 
                             var fileSubmission = new SubmissionDetailFile()
                             {
                                 SubmissionId = submission.Id,
                                 TaskFileId = submissionFileReq.TaskFileId,
                                 FileId = file.Id,
-                                CreatedAt = DateTime.Now,
-                                CreatedBy = studentId,
                             };
-                            _submissionDetailFileRepo.CreateNewSubmissionDetailFile(fileSubmission);
+                            _baseRepo.CreateOrUpdateEntry(fileSubmission);
                         }
                     }
 
@@ -359,10 +348,8 @@ public class TaskService : ITaskService
                             QuestionId = submissionQuestionReq.QuestionId,
                             ChoiceOptionId = submissionQuestionReq.ChoiceOptionId,
                             EssayAnswerContent = submissionQuestionReq.EssayAnswerContent,
-                            CreatedAt = DateTime.Now,
-                            CreatedBy = studentId,
                         };
-                        _submissionDetailQuestionRepo.CreateNewSubmissionDetailQuestion(questionSubmission);
+                        _baseRepo.CreateOrUpdateEntry(questionSubmission);
                     }
 
                     response = new InsertResDto()
@@ -392,10 +379,8 @@ public class TaskService : ITaskService
             TaskName = req.TaskName,
             TaskDescription = req.TaskDescription,
             Duration = req.Duration,
-            CreatedBy = _principleService.GetLoginId(),
-            CreatedAt = DateTime.Now,
         };
-        _taskRepo.CreateTask(task);
+        _baseRepo.CreateOrUpdateEntry(task);
 
         var response = new InsertResDto()
         {
@@ -421,10 +406,8 @@ public class TaskService : ITaskService
                         {
                             QuestionType = questionReq.QuestionType,
                             QuestionContent = questionReq.QuestionContent,
-                            CreatedBy = _principleService.GetLoginId(),
-                            CreatedAt = DateTime.Now,
                         };
-                        question = _questionRepo.CreateQuestion(question);
+                        question = _baseRepo.CreateOrUpdateEntry(question);
 
                         if (question.QuestionType == QuestionType.MultipleChoice)
                         {
@@ -435,10 +418,8 @@ public class TaskService : ITaskService
                                     QuestionId = question.Id,
                                     OptionChar = optionReq.OptionChar,
                                     OptionText = optionReq.OptionText,
-                                    CreatedBy = _principleService.GetLoginId(),
-                                    CreatedAt = DateTime.Now,
                                 };
-                                _multipleChoiceOptionRepo.CreateOption(option);
+                                _baseRepo.CreateOrUpdateEntry(option);
                             }
                         }
 
@@ -446,10 +427,8 @@ public class TaskService : ITaskService
                         {
                             TaskId = taskId,
                             TaskQuestionId = question.Id,
-                            CreatedBy = _principleService.GetLoginId(),
-                            CreatedAt = DateTime.Now,
                         };
-                        _taskDetailRepo.CreateTaskDetail(taskDetail);
+                        _baseRepo.CreateOrUpdateEntry(taskDetail);
                     }
 
                     foreach (var taskFileReq in req.TaskFileList)
@@ -458,28 +437,22 @@ public class TaskService : ITaskService
                         {
                             FileContent = taskFileReq.File.FileContent,
                             FileExtension = taskFileReq.File.FileExtension,
-                            CreatedBy = _principleService.GetLoginId(),
-                            CreatedAt = DateTime.Now,
                         };
-                        file = _fileRepo.CreateNewFile(file);
+                        file = _baseRepo.CreateOrUpdateEntry(file);
 
                         var taskFile = new TaskFile()
                         {
                             FileId = file.Id,
                             FileName = taskFileReq.FileName,
-                            CreatedBy = _principleService.GetLoginId(),
-                            CreatedAt = DateTime.Now,
                         };
-                        taskFile = _taskFileRepo.CreateTaskFile(taskFile);
+                        taskFile = _baseRepo.CreateOrUpdateEntry(taskFile);
 
                         var taskDetail = new TaskDetail()
                         {
                             TaskId = taskId,
                             TaskFileId = taskFile.Id,
-                            CreatedBy = _principleService.GetLoginId(),
-                            CreatedAt = DateTime.Now,
                         };
-                        _taskDetailRepo.CreateTaskDetail(taskDetail);
+                        _baseRepo.CreateOrUpdateEntry(taskDetail);
                     }
 
                     response = new InsertResDto()
